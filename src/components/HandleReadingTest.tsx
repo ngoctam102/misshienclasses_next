@@ -2,9 +2,31 @@
 import useSWR from 'swr';
 import Spinner from './Spinner';
 import { Passage, Test } from '@/types/test';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
     const [selectedPassage, setSelectedPassage] = useState<Passage | null>(null);
+    const [answered, setAnswered] = useState<Set<number>>(new Set());
+    const [remainingTime, setRemainingTime] = useState<number>(0);
+    const [countDown, setCountDown] = useState<boolean>(false);
+    const questionRef = useRef<(HTMLDivElement | null)[]>([]);
+    const handleAnswer = (questionNumber: number, value: string) => {
+        setAnswered((prevState) => {
+            const newSet = new Set(prevState);
+            if (value) {
+                newSet.add(questionNumber);
+            } else {
+                newSet.delete(questionNumber);
+            }
+            return newSet;
+        }) 
+    }
+    const scrollToQuestion = (questionNumber: number) => {
+        const target = questionRef.current[questionNumber];
+        if (target) {
+            target.scrollIntoView({behavior: 'smooth'});
+        }
+
+    }
     const fetcher = (url: string) => fetch(url).then(res => res.json());
     const { data, error, isLoading } = useSWR<Test>(
         `${process.env.NEXT_PUBLIC_READING_API_URL}/${test_slug}`,
@@ -15,10 +37,33 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
             revalidateOnReconnect: false
         }
     )
+    useEffect(() => {
+        if (data) {
+            setRemainingTime(data.duration * 60);
+            setCountDown(true);
+        }
+    }, [data]);
+
+    useEffect(() => {
+        if (!countDown || remainingTime <= 0) return;
+        const timer = setInterval(() => {
+            setRemainingTime(prev => {
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    setCountDown(false);
+                }
+                return prev - 1;
+            })
+        }, 1000)
+        return () => clearInterval(timer);
+    }, [countDown]);
+        
+
     if (isLoading) return <Spinner />
     if (error) return <div>Error: {error.message}</div>
     if (!data) return <div>No data found for the test slug: {test_slug}</div>
     const { title, passages, duration, level } = data;
+    
     return (
         <div className='w-full'>
             <h1 className='mt-8 text-2xl font-bold text-center'>{title} / <span className="text-md text-orange-500">{level}</span></h1>
@@ -32,7 +77,7 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                     </button>
                 ))}
             </div>
-            <div className="passage-container w-full h-[65vh]">
+            <div className="passage-container w-full h-[60vh]">
                 {selectedPassage && ( // if there is a selected passage, then render the passage
                     <div className="w-full flex h-full p-5">
                         <div className="flex w-10/12 rounded-lg">
@@ -42,7 +87,7 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                                     {selectedPassage.content?.value}
                                 </div>
                             </div>
-                            <div className="w-[40%] mt-5 pl-6 overflow-y-auto h-full">
+                            <div className="w-[40%] mt-5 px-5 overflow-y-auto h-full">
                                 <div className="">
                                     {selectedPassage.question_groups.map((group) => (
                                         <div key={group.group_title} className="text-justify leading-loose text-xl">
@@ -59,12 +104,15 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                                             )}
                                             <div className="mb-5">
                                                 {group.questions.map((question) => (
-                                                    <div key={question.question_number}>
+                                                    <div key={question.question_number} ref={el => {questionRef.current[question.question_number] = el}}>
                                                         {question.question_type === 'fill-in-blank' && (
                                                             <div>
                                                                 <div>{question.question_number}. {question.question_text}</div>
                                                                 <div>
-                                                                    <input type="text" className="border-1 rounded-lg p-2" name={`question-${question.question_number}`}/>
+                                                                    <input type="text" className="border-1 rounded-lg p-2" 
+                                                                    name={`answer-${question.question_number}`}
+                                                                    onChange={(event) => {handleAnswer(question.question_number, event.target.value)}}
+                                                                    />
                                                                 </div>
                                                             </div>
                                                         )}
@@ -72,7 +120,10 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                                                             <div>
                                                                 <div>{question.question_number}. {question.question_text}</div>
                                                                 <div>
-                                                                    <select className="bg-gray-200 p-2 rounded-lg max-w-[60%]" name={`question-${question.question_number}`}>
+                                                                    <select className="bg-gray-200 p-2 rounded-lg max-w-[60%]" 
+                                                                    name={`answer-${question.question_number}`}
+                                                                    onChange={(event) => {handleAnswer(question.question_number, event.target.value)}}
+                                                                    >
                                                                         <option value="">Select an option</option>
                                                                         {group?.given_words?.map((option) => (
                                                                             <option key={option} value={option}>{option}</option>
@@ -85,7 +136,10 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                                                             <div>
                                                                 <div>{question.question_number}. {question.question_text}</div>
                                                                 <div>
-                                                                    <select className="bg-gray-200 p-2 rounded-lg max-w-[60%]" name={`question-${question.question_number}`}>
+                                                                    <select className="bg-gray-200 p-2 rounded-lg max-w-[60%]" 
+                                                                    name={`answer-${question.question_number}`}
+                                                                    onChange={(event) => {handleAnswer(question.question_number, event.target.value)}}
+                                                                    >
                                                                         <option value="">Select an option</option>
                                                                         <option value="True">True</option>
                                                                         <option value="False">False</option>
@@ -100,7 +154,18 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                                                                 <div>
                                                                     {question?.options?.map((option) => (
                                                                         <div className="flex items-center gap-2" key={option}>
-                                                                            <input className="size-5" type="checkbox" key={option} name={`question-${question.question_number}`} value={option} />
+                                                                            <input className="size-5" type="checkbox" key={option} 
+                                                                            name={`answer-${question.question_number}`} 
+                                                                            value={option} 
+                                                                            onChange={(event) => {
+                                                                                const checkboxed = document.querySelectorAll(`input[name="answer-${question.question_number}"]:checked`);
+                                                                                if (checkboxed.length === 0) {
+                                                                                    handleAnswer(question.question_number, '');
+                                                                                } else {
+                                                                                    handleAnswer(question.question_number, event.target.value);
+                                                                                }
+                                                                            }}
+                                                                            />
                                                                             <label>{option}</label>
                                                                         </div>
                                                                     ))}
@@ -111,7 +176,10 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                                                             <div>
                                                                 <div>{question.question_number}. {question.question_text}</div>
                                                                 <div>
-                                                                    <select className="bg-gray-200 p-2 rounded-lg max-w-[60%]" name={`question-${question.question_number}`}>
+                                                                    <select className="bg-gray-200 p-2 rounded-lg max-w-[60%]" 
+                                                                    name={`answer-${question.question_number}`}
+                                                                    onChange={(event) => {handleAnswer(question.question_number, event.target.value)}}
+                                                                    >
                                                                         <option value="">Select an option</option>
                                                                         {question?.options?.map((option) => (
                                                                             <option key={option} value={option}>{option}</option>
@@ -131,22 +199,36 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                         <div className="w-2/12 p-8 rounded-lg text-xl">
                             <div className="w-full flex flex-col">
                                 <div className="font-semibold">Thời gian: {duration} phút</div>
-                                <div className="font-semibold mt-5">Thời gian còn lại: </div>
+                                <div className="font-semibold mt-5">
+                                    Thời gian còn lại: {(Math.floor(remainingTime/60)).toString().padStart(2, '0')}:{(remainingTime%60).toString().padStart(2, '0')}</div>
                                 <div className="mt-5">
-                                    {passages.map((passage) => {
-                                        let storeQuestionsNumber = 0;
-                                        const questionsEachPassage = passage.question_groups.reduce(
-                                            (total, group) => total + group.questions.length, storeQuestionsNumber
+                                    {passages.map((passage, passageIndex) => {
+                                        // get the total questions in the previous passages
+                                        const passagesPrev = passages.slice(0, passageIndex);
+                                        const countQuestionsEachPrevPassages = passagesPrev.map((passPrev) => {
+                                            return passPrev.question_groups.reduce(
+                                                (prevQuestions, group) => prevQuestions + group.questions.length, 0
+                                            );
+                                        });
+                                        const totalQuestionsPrevPassages = countQuestionsEachPrevPassages.reduce(
+                                            (total, number) => total + number, 0
                                         );
-                                        storeQuestionsNumber += questionsEachPassage;
+                                        // get the total questions of the current passage
+                                        const countQuestionsCurrentPassage = passage.question_groups.reduce(
+                                            (total, group) => total + group.questions.length, 0
+                                        );
                                         return (
                                             <div key={passage.passage_number}>
                                                 <span className="font-bold">Passage {passage.passage_number}</span>
-                                                <div className="flex flex-wrap gap-8 my-5">
-                                                    {Array.from({length: questionsEachPassage}).map((_, storeQuestionsNumber ) => {
+                                                <div className="flex flex-wrap gap-4 my-5">
+                                                    {Array.from({length: countQuestionsCurrentPassage}).map((_, index ) => {
                                                         return (
-                                                            <div key={ storeQuestionsNumber }>
-                                                                <div className="w-10 h-10 bg-gray-200 rounded-full grid place-items-center">{ storeQuestionsNumber }</div>
+                                                            <div key={ totalQuestionsPrevPassages + index + 1 }>
+                                                                <button 
+                                                                onClick={() => {scrollToQuestion(totalQuestionsPrevPassages + index + 1)}}
+                                                                className={`w-10 h-10 ${
+                                                                    answered.has(totalQuestionsPrevPassages + index + 1) ? 'bg-green-500' : 'bg-gray-200'
+                                                                } rounded-full grid place-items-center`}>{ totalQuestionsPrevPassages + index + 1 }</button>
                                                             </div>
                                                         );
                                                     })}
