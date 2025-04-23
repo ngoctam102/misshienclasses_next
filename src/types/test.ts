@@ -19,7 +19,8 @@ export interface Question {
   question_type: QuestionType;
   question_text: string;
   options?: string[];
-  answer: string;
+  answer: string[];
+  explaination: string;
 }
 
 export interface QuestionGroup {

@@ -3,33 +3,71 @@ import useSWR from 'swr';
 import Spinner from './Spinner';
 import { Passage, Test } from '@/types/test';
 import { useEffect, useRef, useState } from 'react';
+import { toast } from 'react-toastify';
 export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
     const [selectedPassage, setSelectedPassage] = useState<Passage | null>(null);
     const [answered, setAnswered] = useState<Set<number>>(new Set());
-    const [remainingTime, setRemainingTime] = useState<number>(0);
+    const [studentAnswers, setStudentAnswers] = useState<Record<number, string[]>>({});
+    const [testAnswers, setTestAnswers] = useState<Record<number, string[]>>({});
+    const [remainingTime, setRemainingTime] = useState<number>(-1);
     const [countDown, setCountDown] = useState<boolean>(false);
+    const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
+    const [result, setResult] = useState<Record<number, boolean> | null>(null);
     const questionRef = useRef<(HTMLDivElement | null)[]>([]);
-    const handleAnswer = (questionNumber: number, value: string) => {
-        setAnswered((prevState) => {
-            const newSet = new Set(prevState);
+    const formRef = useRef<HTMLFormElement | null>(null);
+    const [focusQuestion, setFocusQuestion] = useState<number | null>(null);
+    const [countCorrectAnswer, setCountCorrectAnswer] = useState<number | null>(0);
+    const [bandScore, setBandScore] = useState<number | null>(0);
+    const handleAnswer = (questionNumber: number, value: string, isCheckbox = false) => {
+        setAnswered(prev => {
+            const newSet = new Set(prev);
             if (value) {
                 newSet.add(questionNumber);
             } else {
                 newSet.delete(questionNumber);
             }
             return newSet;
-        }) 
+        }); 
+        setStudentAnswers(prevAnswer => {
+            if (value && isCheckbox) {
+               const checkboxes = document.querySelectorAll(`input[name="answer-${questionNumber}"]:checked`); // type nodelist
+               const selectedCheckbox = Array.from(checkboxes).map(checkbox => (checkbox as HTMLInputElement ).value)
+               return {
+                ...prevAnswer,
+                [questionNumber]: selectedCheckbox
+               };
+            } else {
+                return {
+                    ...prevAnswer,
+                    [questionNumber]: value ? [value] : []
+                };
+            }
+        });
     }
-    const scrollToQuestion = (questionNumber: number) => {
-        const target = questionRef.current[questionNumber];
-        if (target) {
-            target.scrollIntoView({behavior: 'smooth'});
-        }
 
+    const scrollToQuestion = (questionNumber: number, passageNumber: number) => {
+        // Find passage that question belong to
+        const targetPassage = passages.find(passage => passage.passage_number === passageNumber);
+        // Set that passage is selected
+        if (targetPassage && targetPassage.passage_number != selectedPassage?.passage_number) {
+            setSelectedPassage(targetPassage);
+        // Wait for rendering passage before scroll to
+            setTimeout(() => {
+                const targetQuestion = questionRef.current[questionNumber];
+                    if (targetQuestion) {
+                        targetQuestion.scrollIntoView({behavior: 'smooth', block: 'center'});
+                        setFocusQuestion(questionNumber);
+                    }
+                }, 200); // wait 500ms for rendering passage before scroll to it
+        } else {
+            questionRef.current[questionNumber]?.scrollIntoView({behavior: 'smooth', block: 'center'});
+            setFocusQuestion(questionNumber);
+
+        }
     }
     const fetcher = (url: string) => fetch(url).then(res => res.json());
     const { data, error, isLoading } = useSWR<Test>(
-        `${process.env.NEXT_PUBLIC_READING_API_URL}/${test_slug}`,
+        `${process.env.NEXT_PUBLIC_TEST_API_URL}/${test_slug}`,
         fetcher,
         {
             revalidateIfStale: false,
@@ -39,7 +77,20 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
     )
     useEffect(() => {
         if (data) {
-            setRemainingTime(data.duration * 60);
+            setRemainingTime(data.duration * 0.1);
+            setSelectedPassage(data.passages[0]);
+            data.passages.map(passage => {
+                passage.question_groups.map(group => {
+                    group.questions.map(question => {
+                        setTestAnswers(preAnswer => {
+                            return {
+                                ...preAnswer,
+                                [question.question_number]: question.answer 
+                            };
+                        });
+                    })
+                })
+            })
             setCountDown(true);
         }
     }, [data]);
@@ -57,41 +108,114 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
         }, 1000)
         return () => clearInterval(timer);
     }, [countDown]);
-        
 
+    useEffect(() => {
+        if (remainingTime === 0) {
+            if (formRef.current) {
+                formRef.current.requestSubmit();
+            }
+        }
+    }, [remainingTime])
+        
     if (isLoading) return <Spinner />
     if (error) return <div>Error: {error.message}</div>
     if (!data) return <div>No data found for the test slug: {test_slug}</div>
     const { title, passages, duration, level } = data;
-    
+
+    const checkAnswers = () => {
+        const answerRecord: Record<number, boolean> = {};
+        Object.keys(testAnswers).forEach(questionNumber => {
+            const questionNum = Number(questionNumber);
+            const answersTest = testAnswers[questionNum]; // lấy tất cả câu trả lời của bài test
+            const answersStudent = studentAnswers[questionNum] || []; // lấy tất cả câu trả lời của học sinh nếu để trống thì là rỗng
+            if (answersStudent.length === 0) {
+                answerRecord[questionNum] = false;
+            } else {
+                // Kiểm tra độ dài các câu trả lời của học sinh so với bài test nếu khác thì là sai không cần kiểm tra gì thêm
+                const isSameLength = answersTest.length === answersStudent.length;
+                // Chuyển các câu trả lời của test và student về lower case và xoá các khoảng trắng trước và sau của từ trước khi kiểm tra đúng sai
+                const answersStudentToLowerCase = answersStudent.map(a => a.trim().toLowerCase());
+                const answersTestToLowerCase = answersTest.map(a => a.trim().toLowerCase());
+                // Kiểm tra đúng hay sai
+                const isCorrect = isSameLength && answersTestToLowerCase.every(item => answersStudentToLowerCase.includes(item));
+                answerRecord[questionNum] = isCorrect;
+            }
+        })
+        // console.log(answerRecord);
+        return answerRecord;
+    }
+
+    const checkBandScore = (numberCorrectAnswers: number) => {
+        if (numberCorrectAnswers === 3 || numberCorrectAnswers === 4) return 2.5; 
+        if (numberCorrectAnswers === 5 || numberCorrectAnswers === 6) return 3.0; 
+        if (numberCorrectAnswers >= 7 && numberCorrectAnswers <= 9) return 3.5; 
+        if (numberCorrectAnswers >= 10 && numberCorrectAnswers <= 12) return 4.0; 
+        if (numberCorrectAnswers >= 13 && numberCorrectAnswers <= 15) return 4.5; 
+        if (numberCorrectAnswers >= 16 && numberCorrectAnswers <= 19) return 5.0; 
+        if (numberCorrectAnswers >= 20 && numberCorrectAnswers <= 22) return 5.5; 
+        if (numberCorrectAnswers >= 23 && numberCorrectAnswers <= 26) return 6.0; 
+        if (numberCorrectAnswers >= 27 && numberCorrectAnswers <= 29) return 6.5; 
+        if (numberCorrectAnswers >= 30 && numberCorrectAnswers <= 32) return 7.0; 
+        if (numberCorrectAnswers === 33 || numberCorrectAnswers === 34) return 7.5; 
+        if (numberCorrectAnswers === 35 || numberCorrectAnswers === 36) return 8.0; 
+        if (numberCorrectAnswers === 37 || numberCorrectAnswers === 38) return 8.5; 
+        if (numberCorrectAnswers === 40 || numberCorrectAnswers === 40) return 9.0; 
+        return 0;
+    }
+
+    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        if (Object.keys(studentAnswers).length < 40 && remainingTime > 0) {
+            toast.warning('Bạn cần điền đủ các câu trả lời trước khi bấm nút nộp bài ~!!😭😭!!~~');
+        } else if (Object.keys(studentAnswers).length < 40 && remainingTime === 0) {
+            toast.warning('Thời gian làm bài đã hết. Bài làm sẽ được nộp tự động!~😎~😎~!');
+            const result = checkAnswers();
+            setResult(result);
+            setIsSubmitted(true);
+            const countAnswers = Object.values(result).filter(value => value === true).length;
+            setCountCorrectAnswer(countAnswers);
+            setBandScore(checkBandScore(countAnswers));
+        } else {
+            toast.success("Nộp bài thành công!!~😍~😍~😍~!!");
+            const result = checkAnswers();
+            setResult(result);
+            setIsSubmitted(true);
+        }
+
+    }
     return (
-        <div className='w-full'>
+        <form className="w-full" onSubmit={handleSubmit} ref={formRef}>
             <h1 className='mt-8 text-2xl font-bold text-center'>{title} / <span className="text-md text-orange-500">{level}</span></h1>
-            <div className="w-full mt-4 flex">
+            <div className={`${isSubmitted ? 'flex w-[400px] items-center gap-5 justify-center mt-10 bg-white mx-auto p-5 rounded-xl text-2xl' : 'hidden'}`}>
+                <div><span className="font-bold text-orange-500">{countCorrectAnswer}</span> <span className="font-bold">/ 40</span></div>
+                <span className="font-bold">Band: <span className="text-orange-500">{bandScore}</span></span>
+            </div>
+            <div className="w-full mt-4 ml-10 flex">
                 {passages.map((passage) => (
-                    <button 
+                    <button
+                    type='button'
                     key={passage.passage_number}
                     onClick={() => setSelectedPassage(passage)}
-                    className={`bg-gray-400 text-white font-semibold p-4 mb-5 rounded-[50%] mx-5 hover:bg-orange-500 hover:cursor-pointer transition-colors duration-300 ease-in-out ${selectedPassage?.passage_number===passage.passage_number ? 'bg-orange-500' : ''}`}>
+                    className={`bg-gray-400 text-black font-semibold p-4 mb-5 rounded-[50%] mx-5 hover:bg-orange-500 hover:cursor-pointer hover:scale-110 hover:text-white transition-all duration-300 ease-in-out ${selectedPassage?.passage_number===passage.passage_number ? 'bg-orange-500 text-white' : ''}`}>
                         Passage {passage.passage_number}
                     </button>
                 ))}
             </div>
-            <div className="passage-container w-full h-[60vh]">
+            <div className="passage-container w-full h-[65vh] mb-10">
                 {selectedPassage && ( // if there is a selected passage, then render the passage
-                    <div className="w-full flex h-full p-5">
+                    <div className="w-[95vw] mx-auto bg-white flex h-full p-5 shadow-lg rounded-2xl overflow-auto">
                         <div className="flex w-10/12 rounded-lg">
                             <div className="w-[60%] px-4 overflow-y-auto">
                                 <h2 className="font-bold text-2xl mt-4">{selectedPassage.title}</h2>
-                                <div className="mt-2 text-justify leading-loose text-xl">
+                                <div className="mt-2 text-justify leading-loose text-md lg:text-xl">
                                     {selectedPassage.content?.value}
                                 </div>
                             </div>
                             <div className="w-[40%] mt-5 px-5 overflow-y-auto h-full">
-                                <div className="">
+                                <div>
                                     {selectedPassage.question_groups.map((group) => (
-                                        <div key={group.group_title} className="text-justify leading-loose text-xl">
-                                            <h3 className="font-bold text-xl">{group.group_title}</h3>
+                                        <div key={group.group_title} className="leading-normal lg:leading-loose text-md lg:text-xl">
+                                            <h3 className="font-bold text-left">{group.group_title}</h3>
                                             <p>{group.group_instruction}</p>
                                             { group.given_words && group.given_words.length > 0 && (
                                                 <div className="border-1 rounded-lg p-2">
@@ -103,13 +227,23 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                                                 </div>
                                             )}
                                             <div className="mb-5">
-                                                {group.questions.map((question) => (
-                                                    <div key={question.question_number} ref={el => {questionRef.current[question.question_number] = el}}>
+                                                {group.questions.map((question) => {
+                                                    const isCorrect = result?.[question.question_number];
+                                                    return (
+                                                    <div key={question.question_number} 
+                                                    className={`${focusQuestion === question.question_number ? 'border-2 border-orange-500 p-3 rounded-lg' : ''} ${isSubmitted ? (isCorrect ? 'bg-green-100' : 'bg-red-100') : ''}`}
+                                                    ref={el => {questionRef.current[question.question_number] = el}}>
+                                                        <div className="flex items-center gap-3">
+                                                            {question.question_number}. {question.question_text}
+                                                            {isSubmitted && (
+                                                                <span className={`${isCorrect ? '' : 'text-red-500'}`}>{isCorrect ? '✅' : '✘'}</span>
+                                                            )}
+                                                        </div>
+                                                        <span className="text-sm bg-yellow-200 text-justify">{isSubmitted ? `Explaination: ${question.explaination}` : ''}</span>
                                                         {question.question_type === 'fill-in-blank' && (
                                                             <div>
-                                                                <div>{question.question_number}. {question.question_text}</div>
-                                                                <div>
-                                                                    <input type="text" className="border-1 rounded-lg p-2" 
+                                                                <div className="w-full">
+                                                                    <input type="text" className="border-1 w-[90%] max-w-[400px] rounded-lg p-2" 
                                                                     name={`answer-${question.question_number}`}
                                                                     onChange={(event) => {handleAnswer(question.question_number, event.target.value)}}
                                                                     />
@@ -118,7 +252,6 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                                                         )}
                                                         {question.question_type === 'fill-in-blank-optional' && (
                                                             <div>
-                                                                <div>{question.question_number}. {question.question_text}</div>
                                                                 <div>
                                                                     <select className="bg-gray-200 p-2 rounded-lg max-w-[60%]" 
                                                                     name={`answer-${question.question_number}`}
@@ -134,7 +267,6 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                                                         )}
                                                         {question.question_type === 'true-false-not-given' && (
                                                             <div>
-                                                                <div>{question.question_number}. {question.question_text}</div>
                                                                 <div>
                                                                     <select className="bg-gray-200 p-2 rounded-lg max-w-[60%]" 
                                                                     name={`answer-${question.question_number}`}
@@ -150,7 +282,6 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                                                         )}
                                                         {question.question_type === 'multiple-choice' && (
                                                             <div>
-                                                                <div>{question.question_number}. {question.question_text}</div>
                                                                 <div>
                                                                     {question?.options?.map((option) => (
                                                                         <div className="flex items-center gap-2" key={option}>
@@ -160,9 +291,9 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                                                                             onChange={(event) => {
                                                                                 const checkboxed = document.querySelectorAll(`input[name="answer-${question.question_number}"]:checked`);
                                                                                 if (checkboxed.length === 0) {
-                                                                                    handleAnswer(question.question_number, '');
+                                                                                    handleAnswer(question.question_number, '', true);
                                                                                 } else {
-                                                                                    handleAnswer(question.question_number, event.target.value);
+                                                                                    handleAnswer(question.question_number, event.target.value, true);
                                                                                 }
                                                                             }}
                                                                             />
@@ -174,7 +305,6 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                                                         )}
                                                         {(question.question_type === 'matching' || question.question_type === 'correct-optional') && (
                                                             <div>
-                                                                <div>{question.question_number}. {question.question_text}</div>
                                                                 <div>
                                                                     <select className="bg-gray-200 p-2 rounded-lg max-w-[60%]" 
                                                                     name={`answer-${question.question_number}`}
@@ -189,14 +319,14 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                                                             </div>
                                                         )}
                                                     </div>
-                                                ))}
+                                                );})}
                                             </div>
                                         </div>
                                     ))}
                                 </div>
                             </div>
                         </div>
-                        <div className="w-2/12 p-8 rounded-lg text-xl">
+                        <div className="w-2/12 pl-2 lg:pl-6 rounded-lg text-md lg:text-xl overflow-y-auto">
                             <div className="w-full flex flex-col">
                                 <div className="font-semibold">Thời gian: {duration} phút</div>
                                 <div className="font-semibold mt-5">
@@ -220,13 +350,14 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                                         return (
                                             <div key={passage.passage_number}>
                                                 <span className="font-bold">Passage {passage.passage_number}</span>
-                                                <div className="flex flex-wrap gap-4 my-5">
+                                                <div className="flex flex-wrap gap-2 lg:gap-4 my-5">
                                                     {Array.from({length: countQuestionsCurrentPassage}).map((_, index ) => {
                                                         return (
                                                             <div key={ totalQuestionsPrevPassages + index + 1 }>
                                                                 <button 
-                                                                onClick={() => {scrollToQuestion(totalQuestionsPrevPassages + index + 1)}}
-                                                                className={`w-10 h-10 ${
+                                                                type='button'
+                                                                onClick={() => {scrollToQuestion(totalQuestionsPrevPassages + index + 1, passage.passage_number)}}
+                                                                className={`w-10 h-10 hover:cursor-pointer hover:scale-110 hover:bg-orange-500 hover:text-white transition-all ease-in-out duration-300 ${
                                                                     answered.has(totalQuestionsPrevPassages + index + 1) ? 'bg-green-500' : 'bg-gray-200'
                                                                 } rounded-full grid place-items-center`}>{ totalQuestionsPrevPassages + index + 1 }</button>
                                                             </div>
@@ -242,6 +373,8 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                     </div>
                 )}
             </div>
-        </div>
+            <div className="w-full flex justify-center items-center mb-10"><button type="submit"
+            className="bg-orange-500 font-bold text-white p-3 rounded-lg hover:cursor-pointer hover:scale-110 hover:text-black transition-all duration-300 ease-in-out">Nộp bài</button></div>
+        </form>
     )
 }
