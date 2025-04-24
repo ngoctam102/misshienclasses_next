@@ -4,7 +4,7 @@ import Spinner from './Spinner';
 import { Passage, Test } from '@/types/test';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
-export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
+export default function HandleListeningTest({ test_slug }: { test_slug: string}) {
     const [selectedPassage, setSelectedPassage] = useState<Passage | null>(null);
     const [answered, setAnswered] = useState<Set<number>>(new Set());
     const [studentAnswers, setStudentAnswers] = useState<Record<number, string[]>>({});

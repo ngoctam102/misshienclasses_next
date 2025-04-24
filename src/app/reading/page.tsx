@@ -1,11 +1,10 @@
 'use client';
 import ReadingTests from '@/components/ReadingTests';
 import useSWR from 'swr';
-import { Test } from '@/types/test';
 
 export default function ReadingPage() {
     const fetcher = (url: string) => fetch(url).then(res => res.json());
-    const { data, error, isLoading } = useSWR<Test[]>(
+    const { data, isLoading, error } = useSWR(
         process.env.NEXT_PUBLIC_READING_API_URL,
         fetcher,
         {
@@ -41,7 +40,7 @@ export default function ReadingPage() {
 
     return (
         <div className="container mx-auto p-4">
-            <h1 className="text-2xl font-bold mb-4">Reading Tests</h1>
+            <h1 className="text-4xl font-bold mb-4 text-center">Reading Tests</h1>
             <ReadingTests tests={data} />
         </div>
     );

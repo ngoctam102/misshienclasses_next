@@ -1,7 +1,7 @@
-import { Test } from "@/types/test";
-import Link from "next/link";
+import { Test } from '@/types/test';
+import Link from 'next/link';
 
-export default function ReadingTests({ tests }: { tests: Test[] }) {
+export default function ListeningTests({ tests }: { tests: Test[] }) {
     return (
         <div className="space-y-4 container mx-auto grid grid-cols-3 grid-rows-4 gap-4">
             {tests.map((test) => (
