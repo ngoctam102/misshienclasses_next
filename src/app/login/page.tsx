@@ -27,6 +27,7 @@ export default function LoginPage() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ token: responseData.accessToken }),
                 });
+                window.dispatchEvent(new Event('login-success'));
                 router.push('/pending');
             } else {
                 toast.error(responseData.message);
@@ -38,7 +39,7 @@ export default function LoginPage() {
         
     }
     return (
-        <div className="flex items-center justify-center h-screen">
+        <div className="flex items-center justify-center h-[calc(100vh-224px)]">
             <form className="w-[400px] p-8 bg-white rounded-xl shadow-lg" onSubmit={handleSubmit}>
                 <div className="mb-6 text-center">
                     <h1 className="text-2xl font-bold text-gray-800">Đăng nhập</h1>

@@ -32,16 +32,16 @@ export default function SignUpPage() {
         
     }
     return (
-        <div className="flex items-center justify-center min-h-screen">
-            <form onSubmit={handleSubmit} className="p-8 border-1 w-[400px] bg-white shadow-lg rounded-lg">
+        <div className="flex items-center justify-center h-[calc(100vh-224px)]">
+            <form onSubmit={handleSubmit} className="p-8 w-[400px] bg-white shadow-lg rounded-lg">
                 <div className="flex flex-col space-y-4">
                     <h1 className="font-bold text-2xl text-center mb-5">Đăng kí</h1>
                     <label htmlFor="name" className="font-medium text-sm mb-1 text-gray-700">Tên</label>
-                    <input id="name" name="name" type="text" className="w-full py-2 px-4 border-1 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="Nhập tên của bạn" />
+                    <input id="name" name="name" type="text" className="w-full py-2 px-4 border-1 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="Nhập tên của bạn" />
                     <label htmlFor="email" className="font-medium text-sm mb-1 text-gray-700">Email</label>
-                    <input id="email" type="email" name="email" className="w-full py-2 px-4 border-1 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="Nhập email của bạn" />
+                    <input id="email" type="email" name="email" className="w-full py-2 px-4 border-1 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="Nhập email của bạn" />
                     <label htmlFor="password" className="font-medium text-sm mb-1 text-gray-700">Mật khẩu</label>
-                    <input id="password" type="password" name="password" className="w-full py-2 px-4 border-1 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="Nhập mật khẩu" />
+                    <input id="password" type="password" name="password" className="w-full py-2 px-4 border-1 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="Nhập mật khẩu" />
                     <button type="submit" className="bg-blue-500 p-3 rounded-lg mt-3 text-white font-bold hover:bg-blue-700 hover:scale-105 transition duration-300 hover:cursor-pointer">Đăng kí</button>
                 </div>
                 <div className="mt-4 text-center">

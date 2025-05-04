@@ -17,10 +17,8 @@ export default function PendingPage() {
             });
 
             if (!response.ok) {
-                console.error('Lỗi HTTP:', response.status);
-                toast.error('Có lỗi xảy ra');
-                setStatus('rejected');
-                return;
+                toast.error('Vui lòng đăng nhập lại 😊😊');
+                return router.push('/login');
             }
 
             const data = await response.json();
@@ -33,12 +31,13 @@ export default function PendingPage() {
                     method: 'POST', 
                     credentials: 'include' 
                 });
-
-                if (refreshResponse.ok) {
-                    toast.success(data.message || 'Tài khoản đã được phê duyệt.');
+                const dataRefresh = await refreshResponse.json();
+                if (dataRefresh.success) {
+                    toast.success('Tài khoản đã được phê duyệt.😍😍');
                     router.push('/');
                 } else {
-                    toast.error('Có lỗi xảy ra khi cập nhật token.');
+                    toast.error('Có lỗi xảy ra, vui lòng thử lại');
+                    router.push('/login');
                 }
             } else {
                 if (data.reason === 'rejected') {
@@ -62,17 +61,16 @@ export default function PendingPage() {
 
     useEffect(() => {
         checkApprovalStatus();
-        const interval = setInterval(checkApprovalStatus, 5000);
+        const interval = setInterval(checkApprovalStatus, 3000);
         return () => clearInterval(interval);
     }, []);
 
     if (status === 'pending') {
         return (
-            <div className="flex items-center justify-center h-screen">
-                <Spinner message="Đang kiểm tra trạng thái phê duyệt..." />
+            <div className="flex flex-wrap items-center justify-center h-[calc(100vh-224px)]">
+                <Spinner message="Vui lòng chờ admin phê duyệt 🥰🥰🥰" />
             </div>
         );
     }
-
     return null;
 }

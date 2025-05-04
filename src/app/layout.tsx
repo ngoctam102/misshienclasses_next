@@ -34,7 +34,7 @@ export default function RootLayout({
         <main className="flex-grow bg-gray-200">{children}</main>
         <Footer />
         <ToastContainer 
-          position="top-center"
+          position="top-right"
           autoClose={5000}
           hideProgressBar={false}
           newestOnTop={false}

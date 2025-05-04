@@ -9,7 +9,7 @@ export async function POST(request: Request) {
         { message: 'No cookie found' },
         { status: 401 }
       );
-    }
+    } 
 
     // Dùng cookie parser để lấy token
     const cookies = parse(cookieHeader);
@@ -22,14 +22,13 @@ export async function POST(request: Request) {
       );
     }
 
-    // Gọi đến backend (NestJS) mà KHÔNG truyền token qua Authorization header nữa
+    // Gọi đến backend (NestJS) 
     const backendRes = await fetch(`${process.env.NEXT_PUBLIC_REFRESH_TOKEN_API_URL}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Cookie': `token=${token}` // gửi token qua cookie
-      },
-      credentials: 'include',
+      }
     });
 
     if (!backendRes.ok) {
@@ -60,7 +59,7 @@ export async function POST(request: Request) {
     });
 
     const response = NextResponse.json(
-      { message: 'Token refreshed successfully' },
+      { message: 'Token refreshed successfully', success: true },
       { status: 200 }
     );
 
@@ -69,7 +68,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error refreshing token:', error);
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: 'Internal server error', success: false },
       { status: 500 }
     );
   }
