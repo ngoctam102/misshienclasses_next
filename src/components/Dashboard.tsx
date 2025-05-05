@@ -1,11 +1,10 @@
 'use client';
 import { useState } from "react";
-import LoginApproval from "./dashboard/LoginApproval";
-import CreateReadingTest from "./dashboard/CreateReadingTest";
-import CreateListeningTest from "./dashboard/CreateListeningText";
-import ManageTest from "./dashboard/ManageTest";
-import ManageUser from "./dashboard/ManageUser";
-import StudentTestResult from "./dashboard/StudentTestResult";
+import LoginApproval from "@/components/dashboard/LoginApproval";
+import CreateTest from "@/components/dashboard/CreateTest";
+import ManageTest from "@/components/dashboard/ManageTest";
+import ManageUser from "@/components/dashboard/ManageUser";
+import StudentTestResult from "@/components/dashboard/StudentTestResult";
 
 export default function Dashboard() {
     const [activeTab, setActiveTab] = useState<string>('Phê duyệt đăng nhập');
@@ -16,12 +15,8 @@ export default function Dashboard() {
             component: 'LoginApproval'
         },
         {
-            label: 'Tạo mới Reading Test',
-            component: 'CreateReadingTest'
-        },
-        {
-            label: 'Tạo mới Listening Test',
-            component: 'CreateListeningTest'
+            label: 'Tạo mới Test',
+            component: 'CreateTest'
         },
         {
             label: 'Quản lí Test',
@@ -39,8 +34,7 @@ export default function Dashboard() {
     const renderContent = () => {
         switch (activeComponent) {
             case 'LoginApproval': return <LoginApproval />;
-            case 'CreateReadingTest': return <CreateReadingTest />;
-            case 'CreateListeningTest': return <CreateListeningTest />;
+            case 'CreateTest': return <CreateTest />;
             case 'ManageTest': return <ManageTest />;
             case 'ManageUser': return <ManageUser />;
             case 'StudentTestResult': return <StudentTestResult />;
@@ -54,7 +48,7 @@ export default function Dashboard() {
         setActiveComponent(tab.component);
     }
     return (
-        <div className="p-10 w-full h-[calc(100vh-224px)]">
+        <div className="p-10 w-full h-[calc(100vh-349px)]">
             <div className="rounded-lg w-full h-full flex gap-5">
                 <div className="w-3/12 bg-white rounded-lg">
                     <div className="p-5 flex flex-col gap-10">
@@ -73,9 +67,9 @@ export default function Dashboard() {
                         </div>
                     </div>
                 </div>
-                <div className="w-9/12 bg-white rounded-lg">
-                    <div>
-                            {renderContent()}
+                <div className="w-9/12 bg-white rounded-lg overflow-hidden">
+                    <div className="h-full overflow-auto">
+                        {renderContent()}
                     </div>
                 </div>
             </div>

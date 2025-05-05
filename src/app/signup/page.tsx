@@ -32,7 +32,7 @@ export default function SignUpPage() {
         
     }
     return (
-        <div className="flex items-center justify-center h-[calc(100vh-224px)]">
+        <div className="flex items-center justify-center h-[calc(100vh-349px)]">
             <form onSubmit={handleSubmit} className="p-8 w-[400px] bg-white shadow-lg rounded-lg">
                 <div className="flex flex-col space-y-4">
                     <h1 className="font-bold text-2xl text-center mb-5">Đăng kí</h1>
