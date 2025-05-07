@@ -232,10 +232,14 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                                                         <div className="flex items-center gap-3">
                                                             {question.question_number}. {question.question_text}
                                                             {isSubmitted && (
-                                                                <span className={`${isCorrect ? '' : 'text-red-500'}`}>{isCorrect ? '✅' : '✘'}</span>
+                                                                <>
+                                                                    <span className={`${isCorrect ? '' : 'text-red-500'}`}>{isCorrect ? '✅' : '✘'}</span>
+                                                                    {!isCorrect && <span className="text-green-500 ml-1">{question.answer}</span>}
+                                                                </>
                                                             )}
                                                         </div>
                                                         <span className="text-sm bg-yellow-200 text-justify">{isSubmitted ? `Explaination: ${question.explaination}` : ''}</span>
+                                                        {/* Fill in blank */}
                                                         {question.question_type === 'fill-in-blank' && (
                                                             <div>
                                                                 <div className="w-full">
@@ -246,6 +250,7 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                                                                 </div>
                                                             </div>
                                                         )}
+                                                        {/* Fill in blank optional */}
                                                         {question.question_type === 'fill-in-blank-optional' && (
                                                             <div>
                                                                 <div>
@@ -261,6 +266,7 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                                                                 </div>
                                                             </div>
                                                         )}
+                                                        {/* True false not given */}
                                                         {question.question_type === 'true-false-not-given' && (
                                                             <div>
                                                                 <div>
@@ -269,13 +275,14 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                                                                     onChange={(event) => {handleAnswer(question.question_number, event.target.value)}}
                                                                     >
                                                                         <option value="">Select an option</option>
-                                                                        <option value="True">True</option>
-                                                                        <option value="False">False</option>
-                                                                        <option value="Not Given">Not Given</option>
+                                                                        <option value="true">True</option>
+                                                                        <option value="false">False</option>
+                                                                        <option value="not given">Not Given</option>
                                                                     </select>
                                                                 </div>
                                                             </div>
                                                         )}
+                                                        {/* Multiple choice */}
                                                         {question.question_type === 'multiple-choice' && (
                                                             <div>
                                                                 <div>
@@ -299,6 +306,7 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                                                                 </div>
                                                             </div>
                                                         )}
+                                                        {/* Matching or correct optional */}
                                                         {(question.question_type === 'matching' || question.question_type === 'correct-optional') && (
                                                             <div>
                                                                 <div>
@@ -312,6 +320,21 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                                                                         ))}
                                                                     </select>
                                                                 </div>
+                                                            </div>
+                                                        )}
+                                                        {/* Map question type */}
+                                                        {question.question_type === 'map' && (
+                                                            <div>
+                                                                <select 
+                                                                name={`answer-${question.question_number}`}
+                                                                onChange={(event) => {handleAnswer(question.question_number, event.target.value)}}
+                                                                className="bg-gray-200 p-2 rounded-lg w-[60%] max-w-[60%]"
+                                                                >
+                                                                    <option value="">Select an option</option>
+                                                                    {group?.given_words?.map((word) => (
+                                                                        <option key={word} value={word}>{word}</option>
+                                                                    ))}
+                                                                </select>
                                                             </div>
                                                         )}
                                                     </div>

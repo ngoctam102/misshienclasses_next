@@ -12,7 +12,7 @@ export default function ListeningTests({ tests }: { tests: Test[] }) {
                         <p className="text-gray-600">Duration: {test.duration} minutes</p>
                     </div>
                     <Link 
-                        href={`/reading/start/${test.test_slug}`} 
+                        href={`/listening/start/${test.test_slug}`} 
                         className="bg-blue-500 text-white px-4 py-2 rounded-md max-w-fit hover:bg-blue-600 transition-all hover:scale-110"
                     >
                         Start test

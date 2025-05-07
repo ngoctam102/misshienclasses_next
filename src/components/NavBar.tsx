@@ -125,7 +125,7 @@ export default function Navbar() {
                         {!isLoggedIn ? (
                             <Link 
                                 href="/signup" 
-                                className="ml-4 px-4 py-2 rounded-md text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 transition-colors duration-300"
+                                className="ml-4 px-4 py-2 hover:cursor-pointer rounded-md text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 transition-colors duration-300"
                             >
                                 Đăng ký
                             </Link>
@@ -134,7 +134,7 @@ export default function Navbar() {
                                 <span className="text-gray-600 font-medium">Xin chào, {name}</span>
                                 <button 
                                     onClick={handleLogout}
-                                    className="px-4 py-2 rounded-md text-sm font-medium text-white bg-red-500 hover:bg-red-600 transition-colors duration-300"
+                                    className="px-4 py-2 hover:cursor-pointer rounded-md text-sm font-medium text-white bg-red-500 hover:bg-red-600 transition-colors duration-300"
                                 >
                                     Đăng xuất
                                 </button>

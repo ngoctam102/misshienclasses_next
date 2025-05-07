@@ -4,6 +4,8 @@ import Spinner from './Spinner';
 import { Passage, Test } from '@/types/test';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
+import Image from 'next/image';
+
 export default function HandleListeningTest({ test_slug }: { test_slug: string}) {
     const [selectedPassage, setSelectedPassage] = useState<Passage | null>(null);
     const [answered, setAnswered] = useState<Set<number>>(new Set());
@@ -193,7 +195,7 @@ export default function HandleListeningTest({ test_slug }: { test_slug: string})
                     key={passage.passage_number}
                     onClick={() => setSelectedPassage(passage)}
                     className={`bg-gray-400 text-black font-semibold p-4 mb-5 rounded-[50%] mx-5 hover:bg-orange-500 hover:cursor-pointer hover:scale-110 hover:text-white transition-all duration-300 ease-in-out ${selectedPassage?.passage_number===passage.passage_number ? 'bg-orange-500 text-white' : ''}`}>
-                        Passage {passage.passage_number}
+                        Section {passage.passage_number}
                     </button>
                 ))}
             </div>
@@ -204,7 +206,17 @@ export default function HandleListeningTest({ test_slug }: { test_slug: string})
                             <div className="w-[60%] px-4 overflow-y-auto">
                                 <h2 className="font-bold text-2xl mt-4">{selectedPassage.title}</h2>
                                 <div className="mt-2 text-justify leading-loose text-md lg:text-xl">
-                                    {selectedPassage.content?.value}
+                                    {selectedPassage.content && selectedPassage.content.type === 'image' && selectedPassage.content.value ? (
+                                        <Image 
+                                            src={`${process.env.NEXT_PUBLIC_TEST_API_URL}${selectedPassage.content.value}`} 
+                                            alt="Passage content" 
+                                            width={500}
+                                            height={300}
+                                            className="max-w-full h-auto rounded-lg shadow-md"
+                                        />
+                                    ) : (
+                                        selectedPassage.content?.value
+                                    )}
                                 </div>
                             </div>
                             <div className="w-[40%] mt-5 px-5 overflow-y-auto h-full">
@@ -213,7 +225,22 @@ export default function HandleListeningTest({ test_slug }: { test_slug: string})
                                         <div key={group.group_title} className="leading-normal lg:leading-loose text-md lg:text-xl">
                                             <h3 className="font-bold text-left">{group.group_title}</h3>
                                             <p>{group.group_instruction}</p>
-                                            { group.given_words && group.given_words.length > 0 && (
+                                            {group.content && (
+                                                <div className="mt-2">
+                                                    {group.content.type === 'image' && group.content.value ? (
+                                                        <Image 
+                                                            src={`${process.env.NEXT_PUBLIC_TEST_API_URL}${group.content.value}`} 
+                                                            alt="Group content" 
+                                                            width={500}
+                                                            height={300}
+                                                            className="max-w-full h-auto rounded-lg shadow-md"
+                                                        />
+                                                    ) : (
+                                                        group.content.value
+                                                    )}
+                                                </div>
+                                            )}
+                                            {group.given_words && group.given_words.length > 0 && (
                                                 <div className="border-1 rounded-lg p-2">
                                                     {group.given_words?.map((word) => (
                                                         <div key={word} className="border-1 rounded-lg p-2">
@@ -232,10 +259,14 @@ export default function HandleListeningTest({ test_slug }: { test_slug: string})
                                                         <div className="flex items-center gap-3">
                                                             {question.question_number}. {question.question_text}
                                                             {isSubmitted && (
-                                                                <span className={`${isCorrect ? '' : 'text-red-500'}`}>{isCorrect ? '✅' : '✘'}</span>
+                                                                <>
+                                                                    <span className={`${isCorrect ? '' : 'text-red-500'}`}>{isCorrect ? '✅' : '✘'}</span>
+                                                                    {!isCorrect && <span className="text-green-500 ml-1">{question.answer}</span>}
+                                                                </>
                                                             )}
                                                         </div>
                                                         <span className="text-sm bg-yellow-200 text-justify">{isSubmitted ? `Explaination: ${question.explaination}` : ''}</span>
+                                                        {/* Fill in blank */}
                                                         {question.question_type === 'fill-in-blank' && (
                                                             <div>
                                                                 <div className="w-full">
@@ -246,10 +277,11 @@ export default function HandleListeningTest({ test_slug }: { test_slug: string})
                                                                 </div>
                                                             </div>
                                                         )}
+                                                        {/* Fill in blank optional */}
                                                         {question.question_type === 'fill-in-blank-optional' && (
                                                             <div>
                                                                 <div>
-                                                                    <select className="bg-gray-200 p-2 rounded-lg max-w-[60%]" 
+                                                                    <select className="bg-gray-200 p-2 rounded-lg w-[60%] max-w-[60%]" 
                                                                     name={`answer-${question.question_number}`}
                                                                     onChange={(event) => {handleAnswer(question.question_number, event.target.value)}}
                                                                     >
@@ -261,21 +293,23 @@ export default function HandleListeningTest({ test_slug }: { test_slug: string})
                                                                 </div>
                                                             </div>
                                                         )}
+                                                        {/* True false not given */}
                                                         {question.question_type === 'true-false-not-given' && (
                                                             <div>
                                                                 <div>
-                                                                    <select className="bg-gray-200 p-2 rounded-lg max-w-[60%]" 
+                                                                    <select className="bg-gray-200 p-2 rounded-lg w-[60%] max-w-[60%]" 
                                                                     name={`answer-${question.question_number}`}
                                                                     onChange={(event) => {handleAnswer(question.question_number, event.target.value)}}
                                                                     >
                                                                         <option value="">Select an option</option>
-                                                                        <option value="True">True</option>
-                                                                        <option value="False">False</option>
-                                                                        <option value="Not Given">Not Given</option>
+                                                                        <option value="true">True</option>
+                                                                        <option value="false">False</option>
+                                                                        <option value="not given">Not Given</option>
                                                                     </select>
                                                                 </div>
                                                             </div>
                                                         )}
+                                                        {/* Multiple choice */}
                                                         {question.question_type === 'multiple-choice' && (
                                                             <div>
                                                                 <div>
@@ -299,10 +333,11 @@ export default function HandleListeningTest({ test_slug }: { test_slug: string})
                                                                 </div>
                                                             </div>
                                                         )}
+                                                        {/* Matching or correct optional */}
                                                         {(question.question_type === 'matching' || question.question_type === 'correct-optional') && (
                                                             <div>
                                                                 <div>
-                                                                    <select className="bg-gray-200 p-2 rounded-lg max-w-[60%]" 
+                                                                    <select className="bg-gray-200 p-2 rounded-lg w-[60%] max-w-[60%]" 
                                                                     name={`answer-${question.question_number}`}
                                                                     onChange={(event) => {handleAnswer(question.question_number, event.target.value)}}
                                                                     >
@@ -312,6 +347,21 @@ export default function HandleListeningTest({ test_slug }: { test_slug: string})
                                                                         ))}
                                                                     </select>
                                                                 </div>
+                                                            </div>
+                                                        )}
+                                                        {/* Map question type */}
+                                                        {question.question_type === 'map' && (
+                                                            <div>
+                                                                <select 
+                                                                name={`answer-${question.question_number}`}
+                                                                onChange={(event) => {handleAnswer(question.question_number, event.target.value)}}
+                                                                className="bg-gray-200 p-2 rounded-lg w-[60%] max-w-[60%]"
+                                                                >
+                                                                    <option value="">Select an option</option>
+                                                                    {group?.given_words?.map((word) => (
+                                                                        <option key={word} value={word}>{word}</option>
+                                                                    ))}
+                                                                </select>
                                                             </div>
                                                         )}
                                                     </div>
@@ -345,7 +395,7 @@ export default function HandleListeningTest({ test_slug }: { test_slug: string})
                                         );
                                         return (
                                             <div key={passage.passage_number}>
-                                                <span className="font-bold">Passage {passage.passage_number}</span>
+                                                <span className="font-bold">Section {passage.passage_number}</span>
                                                 <div className="flex flex-wrap gap-2 lg:gap-4 my-5">
                                                     {Array.from({length: countQuestionsCurrentPassage}).map((_, index ) => {
                                                         return (

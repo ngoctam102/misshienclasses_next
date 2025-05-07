@@ -2,7 +2,7 @@ export type ContentType = 'text' | 'image' | 'html';
 
 export interface Content {
   type: ContentType;
-  value: string;
+  value?: string;
 }
 
 export type QuestionType = 
