@@ -10,7 +10,11 @@ declare global {
             render: (container: string, options: {
                 sitekey: string;
                 callback: (token: string) => void;
-            }) => void;
+                size: string;
+                badge: string;
+            }) => number;
+            execute: (widgetId: number) => void;
+            ready: (callback: () => void) => void;
         };
     }
 }
@@ -18,17 +22,27 @@ declare global {
 export default function SignUpPage() {
     const [recaptchaToken, setRecaptchaToken] = useState<string>("");
     const [isRecaptchaReady, setIsRecaptchaReady] = useState(false);
+    const [recaptchaWidgetId, setRecaptchaWidgetId] = useState<number | null>(null);
 
     useEffect(() => {
         if (isRecaptchaReady && typeof window !== 'undefined' && window.grecaptcha) {
-            window.grecaptcha.render('recaptcha-container', {
+            const widgetId = window.grecaptcha.render('recaptcha-container', {
                 'sitekey': process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '',
                 'callback': (token: string) => {
                     setRecaptchaToken(token);
-                }
+                },
+                'size': 'normal',
+                'badge': 'bottomright'
             });
+            setRecaptchaWidgetId(widgetId);
         }
     }, [isRecaptchaReady]);
+
+    const resetRecaptcha = () => {
+        if (recaptchaWidgetId !== null && window.grecaptcha) {
+            window.grecaptcha.execute(recaptchaWidgetId);
+        }
+    };
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -62,6 +76,7 @@ export default function SignUpPage() {
         } catch (error) {
             console.log('Lỗi fetch để tạo mới user: ',error);
             toast.error("Có lỗi xảy ra khi kết nối server!");
+            resetRecaptcha();
         }
     }
 

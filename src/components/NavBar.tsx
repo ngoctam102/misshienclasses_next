@@ -8,21 +8,34 @@ export default function Navbar() {
     const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
     const [name, setName] = useState<string>('');
     const [role, setRole] = useState<string>('');
-    useEffect(() => {
-        // Kiểm tra cookie khi component mount
-        const checkLoginStatus = async () => {
+
+    const checkLoginStatus = async () => {
+        try {
             const res = await fetch('/api/checkLogin');
             const data = await res.json();
             setIsLoggedIn(data.loggedIn);
             setName(data.name);
             setRole(data.role);
-        };
+        } catch (error) {
+            console.error('Error checking login status:', error);
+            setIsLoggedIn(false);
+            setName('');
+            setRole('');
+        }
+    };
+
+    useEffect(() => {
+        // Kiểm tra cookie khi component mount
         checkLoginStatus();
+
         const handleLoginSuccess = () => {
             checkLoginStatus();
         }
         window.addEventListener('login-success', handleLoginSuccess);
-        return () => window.removeEventListener('login-success', handleLoginSuccess);
+        
+        return () => {
+            window.removeEventListener('login-success', handleLoginSuccess);
+        }
     }, []);
 
     const pathname = usePathname();
@@ -60,13 +73,24 @@ export default function Navbar() {
     ];
 
     const handleLogout = async () => {
-        const response = await fetch('/api/logout', {
-            method: 'POST',
-            credentials: 'include'
-        });
-        const data = await response.json();
-        if (data.success) {
+        try {
+            const response = await fetch('/api/logout', {
+                method: 'POST',
+                credentials: 'include'
+            });
+            const data = await response.json();
+            if (data.success) {
+                setIsLoggedIn(false);
+                setName('');
+                setRole('');
+                router.push('/login');
+            }
+        } catch (error) {
+            console.error('Error during logout:', error);
+            // Nếu có lỗi, vẫn reset state và chuyển về login
             setIsLoggedIn(false);
+            setName('');
+            setRole('');
             router.push('/login');
         }
     }

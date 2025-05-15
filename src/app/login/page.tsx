@@ -1,7 +1,7 @@
 'use client';
 import Link from "next/link";
 import { toast } from "react-toastify";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Script from 'next/script';
 
@@ -15,55 +15,42 @@ declare global {
                 badge: string;
             }) => number;
             execute: (widgetId: number) => void;
+            ready: (callback: () => void) => void;
         };
     }
 }
 
 export default function LoginPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [recaptchaToken, setRecaptchaToken] = useState<string>("");
     const [isRecaptchaReady, setIsRecaptchaReady] = useState(false);
-    const [widgetId, setWidgetId] = useState<number | null>(null);
+
+    useEffect(() => {
+        const message = searchParams.get('message');
+        if (message) {
+            toast.info(message);
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         if (isRecaptchaReady && typeof window !== 'undefined' && window.grecaptcha) {
-            try {
-                const id = window.grecaptcha.render('recaptcha-container', {
-                    'sitekey': process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '',
-                    'callback': (token: string) => {
-                        setRecaptchaToken(token);
-                        // Sau khi có token, tự động submit form
-                        const form = document.querySelector('form');
-                        if (form) {
-                            handleSubmit(new Event('submit') as unknown as React.FormEvent<HTMLFormElement>, token);
-                        }
-                    },
-                    'size': 'invisible',
-                    'badge': 'bottomright'
-                });
-                setWidgetId(id);
-            } catch (error) {
-                console.error('Lỗi khi khởi tạo reCAPTCHA:', error);
-            }
+            window.grecaptcha.render('recaptcha-container', {
+                'sitekey': process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '',
+                'callback': (token: string) => {
+                    setRecaptchaToken(token);
+                },
+                'size': 'normal',
+                'badge': 'bottomright'
+            });
         }
     }, [isRecaptchaReady]);
 
-    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>, token?: string) => {
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         
-        // Nếu chưa có token, thực hiện reCAPTCHA
-        if (!token && !recaptchaToken) {
-            try {
-                if (widgetId !== null && typeof window !== 'undefined' && window.grecaptcha) {
-                    window.grecaptcha.execute(widgetId);
-                } else {
-                    console.log('reCAPTCHA chưa sẵn sàng');
-                    toast.error('Vui lòng thử lại sau');
-                }
-            } catch (error) {
-                console.error('Lỗi khi thực thi reCAPTCHA:', error);
-                toast.error('Có lỗi xảy ra, vui lòng thử lại');
-            }
+        if (!recaptchaToken) {
+            toast.error("Vui lòng xác nhận reCAPTCHA");
             return;
         }
 
@@ -71,12 +58,13 @@ export default function LoginPage() {
         const data = {
             email: formData.get('email'),
             password: formData.get('password'),
-            recaptchaToken: token || recaptchaToken
+            recaptchaToken
         };
 
         try {
             const response = await fetch(`${process.env.NEXT_PUBLIC_LOGIN_API_URL}`, {
                 method: "POST",
+                credentials: 'include',
                 headers: {
                     "Content-Type": "application/json"
                 },
@@ -85,25 +73,18 @@ export default function LoginPage() {
             const responseData = await response.json();
             if (responseData.success) {
                 toast.success('Login thành công, vui lòng chờ được admin phê duyệt!');
-                await fetch('/api/set-cookie', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token: responseData.accessToken }),
-                });
                 window.dispatchEvent(new Event('login-success'));
                 router.push('/pending');
             } else {
                 toast.error(responseData.message);
-                // Reset reCAPTCHA token sau khi đăng nhập thất bại
                 setRecaptchaToken("");
             }
         } catch (error) {
             console.log('Lỗi gửi fetch: ',error);
             toast.error('Có lỗi kết nối xảy ra');
-            // Reset reCAPTCHA token sau khi có lỗi
             setRecaptchaToken("");
         }
-    }
+    };
 
     return (
         <div className="flex items-center justify-center h-[calc(100vh-349px)]">
@@ -143,7 +124,7 @@ export default function LoginPage() {
                         />
                     </div>
 
-                    <div id="recaptcha-container" className="hidden"></div>
+                    <div id="recaptcha-container" className="flex justify-center my-4"></div>
 
                     <button
                         type="submit"

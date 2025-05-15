@@ -1,17 +1,18 @@
 import { NextResponse } from 'next/server';
-import { serialize, parse } from 'cookie';
+import { parse } from 'cookie';
 
 export async function POST(request: Request) {
   try {
     const cookieHeader = request.headers.get('cookie');
+    console.log('Cookie from request:', cookieHeader);
+
     if (!cookieHeader) {
       return NextResponse.json(
         { message: 'No cookie found' },
         { status: 401 }
       );
-    } 
+    }
 
-    // Dùng cookie parser để lấy token
     const cookies = parse(cookieHeader);
     const token = cookies.token;
 
@@ -22,53 +23,78 @@ export async function POST(request: Request) {
       );
     }
 
-    // Gọi đến backend (NestJS) 
+    console.log('Calling backend URL:', process.env.NEXT_PUBLIC_REFRESH_TOKEN_API_URL);
+
     const backendRes = await fetch(`${process.env.NEXT_PUBLIC_REFRESH_TOKEN_API_URL}`, {
       method: 'POST',
+      credentials: 'include',
       headers: {
-        'Content-Type': 'application/json',
-        'Cookie': `token=${token}` // gửi token qua cookie
-      }
+        'Cookie': `token=${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      cache: 'no-store'
     });
 
+    console.log('Backend response status:', backendRes.status);
+    console.log('Backend response headers:', Object.fromEntries(backendRes.headers.entries()));
+
+    const responseText = await backendRes.text();
+    console.log('Backend response text:', responseText);
+
     if (!backendRes.ok) {
-      const text = await backendRes.text();
-      console.error('Backend response:', text);
       return NextResponse.json(
-        { message: 'Failed to refresh token from backend' },
+        { 
+          message: 'Failed to refresh token from backend',
+          details: responseText,
+          status: backendRes.status
+        },
         { status: backendRes.status }
       );
     }
 
-    const { accessToken } = await backendRes.json();
-
-    if (!accessToken) {
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      console.error('Failed to parse response as JSON:', e);
       return NextResponse.json(
-        { message: 'No access token received from backend' },
+        { message: 'Invalid response from backend', success: false },
         { status: 500 }
       );
     }
 
-    // Set lại cookie mới
-    const serializedCookie = serialize('token', accessToken, {
-      path: '/',
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 2, // 2 giờ
-    });
+    if (data.success) {
+      const setCookieHeader = backendRes.headers.get('set-cookie');
+      
+      const response = NextResponse.json(
+        { message: 'Token refreshed successfully', success: true },
+        { status: 200 }
+      );
 
-    const response = NextResponse.json(
-      { message: 'Token refreshed successfully', success: true },
-      { status: 200 }
-    );
+      if (setCookieHeader) {
+        response.headers.set('Set-Cookie', setCookieHeader);
+      }
 
-    response.headers.set('Set-Cookie', serializedCookie);
-    return response;
+      return response;
+    } else {
+      return NextResponse.json(
+        { 
+          message: 'Token refresh failed',
+          details: data.message || 'Unknown error',
+          success: false 
+        },
+        { status: 401 }
+      );
+    }
   } catch (error) {
-    console.error('Error refreshing token:', error);
+    console.error('Error in refresh token route:', error);
     return NextResponse.json(
-      { message: 'Internal server error', success: false },
+      { 
+        message: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error',
+        success: false 
+      },
       { status: 500 }
     );
   }

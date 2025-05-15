@@ -90,7 +90,7 @@ export default function ManageTest() {
     const viewTest = async (testId: string) => {
         try {
             console.log('Fetching test with ID:', testId);
-            const response = await fetch(`${process.env.NEXT_PUBLIC_TEST_API_URL}/${testId}`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_TEST_API_URL}/by-id/${testId}`, {
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
@@ -123,7 +123,7 @@ export default function ManageTest() {
         try {
             console.log('Data to update:', updatedData);
 
-            const response = await fetch(`${process.env.NEXT_PUBLIC_TEST_API_URL}/${testId}`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_TEST_API_URL}/by-id/${testId}`, {
                 method: 'PATCH',
                 credentials: 'include',
                 headers: {

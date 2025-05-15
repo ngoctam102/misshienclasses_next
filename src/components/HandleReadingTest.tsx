@@ -4,6 +4,7 @@ import Spinner from './Spinner';
 import { Passage, Test } from '@/types/test';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
+import HandleScore from './HandleScore';
 export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
     const [selectedPassage, setSelectedPassage] = useState<Passage | null>(null);
     const [answered, setAnswered] = useState<Set<number>>(new Set());
@@ -18,6 +19,7 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
     const [focusQuestion, setFocusQuestion] = useState<number | null>(null);
     const [countCorrectAnswer, setCountCorrectAnswer] = useState<number | null>(0);
     const [bandScore, setBandScore] = useState<number | null>(0);
+    const [showScore, setShowScore] = useState<boolean>(false);
     const handleAnswer = (questionNumber: number, value: string, isCheckbox = false) => {
         setAnswered(prev => {
             const newSet = new Set(prev);
@@ -65,9 +67,11 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
 
         }
     }
-    const fetcher = (url: string) => fetch(url).then(res => res.json());
+    const fetcher = (url: string) => fetch(url, {
+        credentials: 'include'
+    }).then(res => res.json());
     const { data, error, isLoading } = useSWR<Test>(
-        `${process.env.NEXT_PUBLIC_TEST_API_URL}/${test_slug}`,
+        `${process.env.NEXT_PUBLIC_TEST_API_URL}/by-slug/${test_slug}`,
         fetcher,
         {
             revalidateIfStale: false,
@@ -77,7 +81,7 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
     )
     useEffect(() => {
         if (data) {
-            setRemainingTime(data.duration * 0.1);
+            setRemainingTime(data.duration * 60);
             setSelectedPassage(data.passages[0]);
             const tempAnswers: Record<number, string[]> = {};
             data.passages.map(passage => {
@@ -117,7 +121,7 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
     if (isLoading) return <Spinner />
     if (error) return <div>Error: {error.message}</div>
     if (!data) return <div>No data found for the test slug: {test_slug}</div>
-    const { title, passages, duration, level } = data;
+    const { title, passages, duration, level, type } = data;
 
     const checkAnswers = () => {
         const answerRecord: Record<number, boolean> = {};
@@ -162,29 +166,48 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         if (Object.keys(studentAnswers).length < 40 && remainingTime > 0) {
-            toast.warning('Bạn cần điền đủ các câu trả lời trước khi bấm nút nộp bài ~!!😭😭!!~~');
+            toast.warning('Bạn cần điền đủ các câu trả lời trước khi bấm nút nộp bài 😉😉😉😉');
         } else if (Object.keys(studentAnswers).length < 40 && remainingTime === 0) {
             toast.warning('Thời gian làm bài đã hết. Bài làm sẽ được nộp tự động!~😎~😎~!');
             const result = checkAnswers();
+            // Lưu kết quả vào state
             setResult(result);
+            // Set isSubmitted là true
             setIsSubmitted(true);
+            // Đếm xem có bao nhiêu câu đúng
             const countAnswers = Object.values(result).filter(value => value === true).length;
             setCountCorrectAnswer(countAnswers);
+            // Tính điểm band score
             setBandScore(checkBandScore(countAnswers));
+            // Send result to handle score component
+            setShowScore(true);
         } else {
             toast.success("Nộp bài thành công!!~😍~😍~😍~!!");
             const result = checkAnswers();
+            // Lưu kết quả vào state
             setResult(result);
+            // Set isSubmitted là true
             setIsSubmitted(true);
+            // Đếm xem có bao nhiêu câu đúng
+            const countAnswers = Object.values(result).filter(value => value === true).length;
+            setCountCorrectAnswer(countAnswers);
+            // Tính điểm band score
+            setBandScore(checkBandScore(countAnswers));
+            // Send result to handle score component
+            setShowScore(true);
         }
-
     }
     return (
         <form className="w-full" onSubmit={handleSubmit} ref={formRef}>
             <h1 className='mt-8 text-2xl font-bold text-center'>{title} / <span className="text-md text-orange-500">{level}</span></h1>
-            <div className={`${isSubmitted ? 'flex w-[400px] items-center gap-5 justify-center mt-10 bg-white mx-auto p-5 rounded-xl text-2xl' : 'hidden'}`}>
-                <div><span className="font-bold text-orange-500">{countCorrectAnswer}</span> <span className="font-bold">/ 40</span></div>
-                <span className="font-bold">Band: <span className="text-orange-500">{bandScore}</span></span>
+            <div className={`${isSubmitted ? 'flex flex-col w-[400px] items-center gap-5 justify-center mt-10 bg-white mx-auto p-5 rounded-xl text-2xl' : 'hidden'}`}>
+                <div className="flex items-center justify-center gap-5">
+                    <div><span className="font-bold text-orange-500">{countCorrectAnswer}</span> <span className="font-bold">/ 40</span></div>
+                    <span className="font-bold">Band: <span className="text-orange-500">{bandScore}</span></span>
+                </div>
+                {showScore && (
+                    <HandleScore test_name={title} test_type={type} score={bandScore || 0} duration={duration*60 - remainingTime}/>
+                )}
             </div>
             <div className="w-full mt-4 ml-10 flex">
                 {passages.map((passage) => (
@@ -245,6 +268,7 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                                                                 <div className="w-full">
                                                                     <input type="text" className="border-1 w-[90%] max-w-[400px] rounded-lg p-2" 
                                                                     name={`answer-${question.question_number}`}
+                                                                    value={studentAnswers[question.question_number]?.[0] || ''}
                                                                     onChange={(event) => {handleAnswer(question.question_number, event.target.value)}}
                                                                     />
                                                                 </div>
@@ -256,6 +280,7 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                                                                 <div>
                                                                     <select className="bg-gray-200 p-2 rounded-lg max-w-[60%]" 
                                                                     name={`answer-${question.question_number}`}
+                                                                    value={studentAnswers[question.question_number]?.[0] || ''}
                                                                     onChange={(event) => {handleAnswer(question.question_number, event.target.value)}}
                                                                     >
                                                                         <option value="">Select an option</option>
@@ -272,6 +297,7 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                                                                 <div>
                                                                     <select className="bg-gray-200 p-2 rounded-lg max-w-[60%]" 
                                                                     name={`answer-${question.question_number}`}
+                                                                    value={studentAnswers[question.question_number]?.[0] || ''}
                                                                     onChange={(event) => {handleAnswer(question.question_number, event.target.value)}}
                                                                     >
                                                                         <option value="">Select an option</option>
@@ -290,7 +316,8 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                                                                         <div className="flex items-center gap-2" key={option}>
                                                                             <input className="size-5" type="checkbox" key={option} 
                                                                             name={`answer-${question.question_number}`} 
-                                                                            value={option} 
+                                                                            value={option}
+                                                                            checked={studentAnswers[question.question_number]?.includes(option) || false}
                                                                             onChange={(event) => {
                                                                                 const checkboxed = document.querySelectorAll(`input[name="answer-${question.question_number}"]:checked`);
                                                                                 if (checkboxed.length === 0) {
@@ -312,6 +339,7 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                                                                 <div>
                                                                     <select className="bg-gray-200 p-2 rounded-lg max-w-[60%]" 
                                                                     name={`answer-${question.question_number}`}
+                                                                    value={studentAnswers[question.question_number]?.[0] || ''}
                                                                     onChange={(event) => {handleAnswer(question.question_number, event.target.value)}}
                                                                     >
                                                                         <option value="">Select an option</option>
@@ -327,6 +355,7 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                                                             <div>
                                                                 <select 
                                                                 name={`answer-${question.question_number}`}
+                                                                value={studentAnswers[question.question_number]?.[0] || ''}
                                                                 onChange={(event) => {handleAnswer(question.question_number, event.target.value)}}
                                                                 className="bg-gray-200 p-2 rounded-lg w-[60%] max-w-[60%]"
                                                                 >

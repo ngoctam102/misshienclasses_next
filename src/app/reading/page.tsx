@@ -3,7 +3,9 @@ import ReadingTests from '@/components/ReadingTests';
 import useSWR from 'swr';
 
 export default function ReadingPage() {
-    const fetcher = (url: string) => fetch(url).then(res => res.json());
+    const fetcher = (url: string) => fetch(url, {
+        credentials: 'include'
+    }).then(res => res.json());
     const { data, isLoading, error } = useSWR(
         process.env.NEXT_PUBLIC_READING_API_URL,
         fetcher,

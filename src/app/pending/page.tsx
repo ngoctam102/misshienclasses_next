@@ -33,21 +33,35 @@ export default function PendingPage() {
                 });
                 const dataRefresh = await refreshResponse.json();
                 if (dataRefresh.success) {
+                    // Thêm delay nhỏ để đảm bảo cookie được set
+                    await new Promise(resolve => setTimeout(resolve, 500));
                     toast.success('Tài khoản đã được phê duyệt.😍😍');
                     router.push('/');
+                    // Dừng interval ngay lập tức
+                    return true;
                 } else {
                     toast.error('Có lỗi xảy ra, vui lòng thử lại');
                     router.push('/login');
+                    return true;
                 }
             } else {
                 if (data.reason === 'rejected') {
                     setStatus('rejected');
                     toast.error(data.message || 'Tài khoản đã bị từ chối.');
-                    await fetch('/api/logout', { 
+                    const res = await fetch('/api/logout', { 
                         method: 'POST', 
                         credentials: 'include' 
                     });
-                    router.push('/login');
+                    const dataLogout = await res.json();
+                    if (dataLogout.success) {
+                        toast.success('Đăng xuất thành công');
+                        router.push('/login');
+                        return true;
+                    } else {
+                        toast.error('Có lỗi xảy ra, vui lòng thử lại');
+                        router.push('/login');
+                        return true;
+                    }
                 } else {
                     setStatus('pending');
                 }
@@ -57,12 +71,33 @@ export default function PendingPage() {
             setStatus('rejected');
             toast.error('Có lỗi xảy ra. Vui lòng thử lại sau.');
         }
+        return false;
     };
 
     useEffect(() => {
-        checkApprovalStatus();
-        const interval = setInterval(checkApprovalStatus, 3000);
-        return () => clearInterval(interval);
+        let intervalId: NodeJS.Timeout;
+        
+        const startChecking = async () => {
+            const shouldStop = await checkApprovalStatus();
+            if (shouldStop) {
+                clearInterval(intervalId);
+                return;
+            }
+            intervalId = setInterval(async () => {
+                const shouldStop = await checkApprovalStatus();
+                if (shouldStop) {
+                    clearInterval(intervalId);
+                }
+            }, 3000);
+        };
+
+        startChecking();
+        
+        return () => {
+            if (intervalId) {
+                clearInterval(intervalId);
+            }
+        };
     }, []);
 
     if (status === 'pending') {

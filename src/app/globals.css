@@ -119,3 +119,7 @@
   }
 }
  */
+
+.font-test {
+  font-family: var(--font-inter), sans-serif;
+}

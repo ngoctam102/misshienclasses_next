@@ -29,17 +29,15 @@ export async function POST(request: Request) {
       }
     });
     const data = await res.json();
-    if (!data.success){
-      return NextResponse.json(
-        { success: false, message: 'Logout failed' },
-        { status: 400 }
-      );
+    if (!data.success) {
+      console.warn('Backend logout failed, nhưng vẫn xoá token ở client');
     }
+    // Luôn xóa cookie token bất kể response từ backend
     const expiredCookie = serialize('token', '', {
       path: '/',
       maxAge: -1,
       httpOnly: true,
-      sameSite: 'lax',
+      sameSite: 'strict',
       secure: process.env.NODE_ENV === 'production',
     });
     const response = NextResponse.json({ success: true, message: 'Đăng xuất thành công' });
