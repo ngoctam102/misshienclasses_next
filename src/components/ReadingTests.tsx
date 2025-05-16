@@ -1,24 +1,117 @@
-import { Test } from "@/types/test";
 import Link from "next/link";
+import { 
+    Card, 
+    CardContent, 
+    Typography, 
+    Button, 
+    Box,
+    Chip,
+    CardActions
+} from '@mui/material';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import SchoolIcon from '@mui/icons-material/School';
 
-export default function ReadingTests({ tests }: { tests: Test[] }) {
+interface TestListItem {
+    test_slug: string;
+    title: string;
+    level: string;
+    duration: number;
+    type: string;
+}
+
+export default function ReadingTests({ tests }: { tests: TestListItem[] }) {
     return (
-        <div className="space-y-4 container mx-auto grid grid-cols-3 grid-rows-4 gap-4">
-            {tests.map((test) => (
-                <div key={test.test_slug} className="p-4 border rounded-lg h-full flex flex-col justify-between bg-orange-200">
-                    <div>
-                        <h1 className="text-xl font-bold">{test.title}</h1>
-                        <p className="text-gray-600">Level: {test.level}</p>
-                        <p className="text-gray-600">Duration: {test.duration} minutes</p>
-                    </div>
-                    <Link 
-                        href={`/reading/start/${test.test_slug}`} 
-                        className="bg-blue-500 text-white px-4 py-2 rounded-md max-w-fit hover:bg-blue-600 transition-all hover:scale-110"
-                    >
-                        Start test
-                    </Link>
-                </div>
-            ))}
-        </div>
+        <Box sx={{ flexGrow: 1 }}>
+            <Box sx={{ 
+                display: 'grid',
+                gridTemplateColumns: {
+                    xs: '1fr',
+                    sm: 'repeat(2, 1fr)',
+                    md: 'repeat(3, 1fr)'
+                },
+                gap: 3,
+                maxWidth: '1200px',
+                margin: '0 auto'
+            }}>
+                {tests.map((test) => (
+                    <Box key={test.test_slug}>
+                        <Card 
+                            sx={{ 
+                                height: '100%',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                transition: 'all 300ms ease-in-out',
+                                '&:hover': {
+                                    transform: 'scale(1.02)',
+                                    boxShadow: 3
+                                }
+                            }}
+                        >
+                            <CardContent sx={{ 
+                                flexGrow: 1,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                transition: 'all 300ms ease-in-out',
+                                '&:last-child': {
+                                    pb: 2
+                                }
+                            }}>
+                                <Typography 
+                                    variant="h6" 
+                                    component="h2" 
+                                    gutterBottom
+                                    sx={{
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        display: '-webkit-box',
+                                        WebkitLineClamp: 2,
+                                        WebkitBoxOrient: 'vertical',
+                                        minHeight: '3.6em',
+                                        lineHeight: '1.2em',
+                                        transition: 'all 300ms ease-in-out'
+                                    }}
+                                >
+                                    {test.title}
+                                </Typography>
+                                <Box display="flex" gap={1} mb={2} sx={{ transition: 'all 300ms ease-in-out' }}>
+                                    <Chip 
+                                        icon={<SchoolIcon />} 
+                                        label={test.level} 
+                                        color="primary" 
+                                        size="small"
+                                        sx={{ transition: 'all 300ms ease-in-out' }}
+                                    />
+                                    <Chip 
+                                        icon={<AccessTimeIcon />} 
+                                        label={`${test.duration} minutes`} 
+                                        color="secondary" 
+                                        size="small"
+                                        sx={{ transition: 'all 300ms ease-in-out' }}
+                                    />
+                                </Box>
+                            </CardContent>
+                            <CardActions sx={{ p: 2, pt: 0, transition: 'all 300ms ease-in-out' }}>
+                                <Button
+                                    component={Link}
+                                    href={`/reading/start/${test.test_slug}`}
+                                    variant="contained"
+                                    color="primary"
+                                    fullWidth
+                                    sx={{ 
+                                        transition: 'all 300ms ease-in-out',
+                                        '&:hover': {
+                                            transform: 'translateY(-2px)',
+                                            boxShadow: 2
+                                        }
+                                    }}
+                                >
+                                    Start test
+                                </Button>
+                            </CardActions>
+                        </Card>
+                    </Box>
+                ))}
+            </Box>
+        </Box>
     );
 }

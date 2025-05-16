@@ -15,7 +15,7 @@ export default function Footer() {
                             <a 
                                 href={process.env.FACEBOOK_FANPAGE_URL} 
                                 target="_blank" 
-                                className="flex items-center text-gray-600 hover:text-orange-500 transition-colors duration-300"
+                                className="flex items-center text-gray-600 hover:text-orange-500 transition duration-300 ease-in-out hover:scale-110"
                             >
                                 <span className="mr-2">📱</span>
                                 Fan Page
@@ -23,7 +23,7 @@ export default function Footer() {
                             <a 
                                 href={process.env.FACEBOOK_URL} 
                                 target="_blank" 
-                                className="flex items-center text-gray-600 hover:text-orange-500 transition-colors duration-300"
+                                className="flex items-center text-gray-600 hover:text-orange-500 transition duration-300 ease-in-out hover:scale-110"
                             >
                                 <span className="mr-2">👤</span>
                                 Facebook
@@ -31,7 +31,7 @@ export default function Footer() {
                             <a 
                                 href={process.env.ZALO_URL} 
                                 target="_blank" 
-                                className="flex items-center text-gray-600 hover:text-orange-500 transition-colors duration-300"
+                                className="flex items-center text-gray-600 hover:text-orange-500 transition duration-300 ease-in-out hover:scale-110"
                             >
                                 <span className="mr-2">💬</span>
                                 Zalo

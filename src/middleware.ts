@@ -86,7 +86,6 @@ export async function middleware(req: NextRequest) {
         // Xóa cookie token ở client
         const response = NextResponse.redirect(loginUrl);
         response.cookies.set('token', '', { path: '/', expires: new Date(0) });
-
         loginUrl.searchParams.set('message', 'Phiên làm việc đã hết hạn, vui lòng đăng nhập lại');
         return response;
       } catch (logoutError) {
