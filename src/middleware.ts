@@ -36,27 +36,25 @@ export async function middleware(req: NextRequest) {
       pathname: req.nextUrl.pathname
     });
 
+    // Nếu là admin, cho phép truy cập tất cả các trang trừ /pending
     if (isAdmin) {
-      if (req.nextUrl.pathname === '/pending') {
+      if (isOnPendingPage) {
         return NextResponse.redirect(new URL('/', req.url));
       }
       return NextResponse.next();
-    } else {
-      if (!isApproved) {
-        // Nếu chưa approved, chỉ cho vào /pending
-        if (!isOnPendingPage) {
-          const pendingUrl = new URL('/pending', req.url);
-          return NextResponse.redirect(pendingUrl);
-        }
-      } else {
-        // Nếu đã approved rồi mà vào /pending thì cho về '/'
-        if (isOnPendingPage) {
-          console.log('User approved, redirecting to home');
-          const homeUrl = new URL('/', req.url);
-          return NextResponse.redirect(homeUrl);
-        }
-      }
     }
+
+    // Nếu không phải admin
+    if (!isApproved) {
+      // Nếu chưa approved và không ở trang pending, chuyển về pending
+      if (!isOnPendingPage) {
+        return NextResponse.redirect(new URL('/pending', req.url));
+      }
+    } else if (isOnPendingPage) {
+      // Nếu đã approved và đang ở trang pending, chuyển về trang chủ
+      return NextResponse.redirect(new URL('/', req.url));
+    }
+
     return NextResponse.next();
   } catch (err) {
     console.log('>>>>>>VÀO ĐƯỢC CATCH BLOG>>>>');
@@ -64,7 +62,7 @@ export async function middleware(req: NextRequest) {
     const loginUrl = new URL('/login', req.url);
     
     // Kiểm tra xem lỗi có phải do token hết hạn không
-    if (err.code === 'ERR_JWT_EXPIRED') {
+    if (err instanceof Error && 'code' in err && err.code === 'ERR_JWT_EXPIRED') {
       console.log('>>>TOken hết hạn, thực hiện logout.....');
       try {
         console.log('Token expired, calling logout API...');
@@ -104,6 +102,6 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!login|signup|api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!login|signup|api|_next/static|_next/image|favicon.ico|apple-touch-icon.png|favicon-32x32.png|favicon-16x16.png|android-chrome-192x192.png|android-chrome-512x512.png|site.webmanifest).*)',
   ],
 };

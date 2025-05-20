@@ -24,7 +24,7 @@ export default function LoginPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [recaptchaToken, setRecaptchaToken] = useState<string>("");
-    const [isRecaptchaReady, setIsRecaptchaReady] = useState(false);
+    const [isRecaptchaInitialized, setIsRecaptchaInitialized] = useState(false);
 
     useEffect(() => {
         const message = searchParams.get('message');
@@ -34,17 +34,30 @@ export default function LoginPage() {
     }, [searchParams]);
 
     useEffect(() => {
-        if (isRecaptchaReady && typeof window !== 'undefined' && window.grecaptcha) {
-            window.grecaptcha.render('recaptcha-container', {
-                'sitekey': process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '',
-                'callback': (token: string) => {
-                    setRecaptchaToken(token);
-                },
-                'size': 'normal',
-                'badge': 'bottomright'
-            });
-        }
-    }, [isRecaptchaReady]);
+        const checkRecaptcha = () => {
+            if (typeof window !== 'undefined' && window.grecaptcha && !isRecaptchaInitialized) {
+                window.grecaptcha.ready(() => {
+                    try {
+                        window.grecaptcha.render('recaptcha-container', {
+                            'sitekey': process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '',
+                            'callback': (token: string) => {
+                                setRecaptchaToken(token);
+                            },
+                            'size': 'normal',
+                            'badge': 'bottomright'
+                        });
+                        setIsRecaptchaInitialized(true);
+                    } catch (error) {
+                        console.error('Lỗi khi render reCAPTCHA:', error);
+                    }
+                });
+            } else if (!isRecaptchaInitialized) {
+                setTimeout(checkRecaptcha, 100);
+            }
+        };
+
+        checkRecaptcha();
+    }, [isRecaptchaInitialized]);
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -72,9 +85,17 @@ export default function LoginPage() {
             });
             const responseData = await response.json();
             if (responseData.success) {
-                toast.success('Login thành công, vui lòng chờ được admin phê duyệt!');
+                toast.success('Login thành công!');
                 window.dispatchEvent(new Event('login-success'));
-                router.push('/pending');
+                
+                // Kiểm tra role từ response
+                if (responseData.role === 'admin') {
+                    // Nếu là admin, chuyển hướng về trang chủ
+                    router.push('/');
+                } else {
+                    // Nếu là user thường, chuyển hướng về trang pending
+                    router.push('/pending');
+                }
             } else {
                 toast.error(responseData.message);
                 setRecaptchaToken("");
@@ -87,10 +108,11 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="flex items-center justify-center h-[calc(100vh-349px)]">
+        <div className="flex items-center justify-center h-[calc(100vh-281px)]">
             <Script
                 src="https://www.google.com/recaptcha/api.js"
-                onLoad={() => setIsRecaptchaReady(true)}
+                async
+                defer
             />
             <form className="w-[400px] p-8 bg-white rounded-xl shadow-lg" onSubmit={handleSubmit}>
                 <div className="mb-6 text-center">

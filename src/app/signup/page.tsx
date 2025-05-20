@@ -21,22 +21,35 @@ declare global {
 
 export default function SignUpPage() {
     const [recaptchaToken, setRecaptchaToken] = useState<string>("");
-    const [isRecaptchaReady, setIsRecaptchaReady] = useState(false);
     const [recaptchaWidgetId, setRecaptchaWidgetId] = useState<number | null>(null);
+    const [isRecaptchaInitialized, setIsRecaptchaInitialized] = useState(false);
 
     useEffect(() => {
-        if (isRecaptchaReady && typeof window !== 'undefined' && window.grecaptcha) {
-            const widgetId = window.grecaptcha.render('recaptcha-container', {
-                'sitekey': process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '',
-                'callback': (token: string) => {
-                    setRecaptchaToken(token);
-                },
-                'size': 'normal',
-                'badge': 'bottomright'
-            });
-            setRecaptchaWidgetId(widgetId);
-        }
-    }, [isRecaptchaReady]);
+        const checkRecaptcha = () => {
+            if (typeof window !== 'undefined' && window.grecaptcha && !isRecaptchaInitialized) {
+                window.grecaptcha.ready(() => {
+                    try {
+                        const widgetId = window.grecaptcha.render('recaptcha-container', {
+                            'sitekey': process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '',
+                            'callback': (token: string) => {
+                                setRecaptchaToken(token);
+                            },
+                            'size': 'normal',
+                            'badge': 'bottomright'
+                        });
+                        setRecaptchaWidgetId(widgetId);
+                        setIsRecaptchaInitialized(true);
+                    } catch (error) {
+                        console.error('Lỗi khi render reCAPTCHA:', error);
+                    }
+                });
+            } else if (!isRecaptchaInitialized) {
+                setTimeout(checkRecaptcha, 100);
+            }
+        };
+
+        checkRecaptcha();
+    }, [isRecaptchaInitialized]);
 
     const resetRecaptcha = () => {
         if (recaptchaWidgetId !== null && window.grecaptcha) {
@@ -81,10 +94,11 @@ export default function SignUpPage() {
     }
 
     return (
-        <div className="flex items-center justify-center h-[calc(100vh-349px)]">
+        <div className="flex items-center justify-center h-[calc(100vh-281px)]">
             <Script
                 src="https://www.google.com/recaptcha/api.js"
-                onLoad={() => setIsRecaptchaReady(true)}
+                async
+                defer
             />
             <form onSubmit={handleSubmit} className="p-8 w-[400px] bg-white shadow-lg rounded-lg">
                 <div className="flex flex-col space-y-4">

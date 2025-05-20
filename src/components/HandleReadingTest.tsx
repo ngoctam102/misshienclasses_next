@@ -5,6 +5,8 @@ import { Passage, Test } from '@/types/test';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import HandleScore from './HandleScore';
+import Image from 'next/image';
+
 export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
     const [selectedPassage, setSelectedPassage] = useState<Passage | null>(null);
     const [answered, setAnswered] = useState<Set<number>>(new Set());
@@ -199,7 +201,7 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
     }
     return (
         <form className="w-full" onSubmit={handleSubmit} ref={formRef}>
-            <h1 className='mt-8 text-2xl font-bold text-center'>{title} / <span className="text-md text-orange-500">{level}</span></h1>
+            <h1 className='mt-2 text-2xl font-bold text-center'>{title} / <span className="text-md text-orange-500">{level}</span></h1>
             <div className={`${isSubmitted ? 'flex flex-col w-[400px] items-center gap-5 justify-center mt-10 bg-white mx-auto p-5 rounded-xl text-2xl' : 'hidden'}`}>
                 <div className="flex items-center justify-center gap-5">
                     <div><span className="font-bold text-orange-500">{countCorrectAnswer}</span> <span className="font-bold">/ 40</span></div>
@@ -209,7 +211,7 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                     <HandleScore test_name={title} test_type={type} score={bandScore || 0} duration={duration*60 - remainingTime}/>
                 )}
             </div>
-            <div className="w-full mt-4 ml-10 flex">
+            <div className="w-full mt-2 pl-10 flex">
                 {passages.map((passage) => (
                     <button
                     type='button'
@@ -227,7 +229,18 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                             <div className="w-[60%] px-4 overflow-y-auto">
                                 <h2 className="font-bold text-2xl mt-4">{selectedPassage.title}</h2>
                                 <div className="mt-2 text-justify leading-loose text-md lg:text-xl">
-                                    {selectedPassage.content?.value}
+                                    {selectedPassage.content && selectedPassage.content.type === 'image' && selectedPassage.content.value ? (
+                                        <Image 
+                                            key={selectedPassage.passage_number}
+                                            src={selectedPassage.content.value} 
+                                            alt="Passage content" 
+                                            width={500}
+                                            height={500}
+                                            className="max-w-full h-auto rounded-lg shadow-md"
+                                        />
+                                    ) : (
+                                        selectedPassage.content?.value
+                                    )}
                                 </div>
                             </div>
                             <div className="w-[40%] mt-5 px-5 overflow-y-auto h-full">
@@ -236,6 +249,29 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                                         <div key={group.group_title} className="leading-normal lg:leading-loose text-md lg:text-xl">
                                             <h3 className="font-bold text-left">{group.group_title}</h3>
                                             <p>{group.group_instruction}</p>
+                                            {/* Thêm phần hiển thị content của group */}
+                                            {group.content && (
+                                                <div className="mt-4 mb-4">
+                                                    {group.content.type === 'image' && group.content.value ? (
+                                                        <Image 
+                                                            src={group.content.value} 
+                                                            alt="Group content" 
+                                                            width={500}
+                                                            height={300}
+                                                            className="max-w-full h-auto rounded-lg shadow-md"
+                                                        />
+                                                    ) : group.content.type === 'text' && group.content.value ? (
+                                                        <div className="text-justify">
+                                                            {group.content.value}
+                                                        </div>
+                                                    ) : group.content.type === 'html' && group.content.value ? (
+                                                        <div 
+                                                            className="text-justify"
+                                                            dangerouslySetInnerHTML={{ __html: group.content.value }}
+                                                        />
+                                                    ) : null}
+                                                </div>
+                                            )}
                                             { group.given_words && group.given_words.length > 0 && (
                                                 <div className="border-1 rounded-lg p-2">
                                                     {group.given_words?.map((word) => (
@@ -421,7 +457,7 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                     </div>
                 )}
             </div>
-            <div className="w-full flex justify-center items-center mb-10"><button type="submit"
+            <div className="w-full flex justify-center items-center mb-5"><button type="submit"
             className="bg-orange-500 font-bold text-white p-3 rounded-lg hover:cursor-pointer hover:scale-110 hover:text-black transition-all duration-300 ease-in-out">Nộp bài</button></div>
         </form>
     )

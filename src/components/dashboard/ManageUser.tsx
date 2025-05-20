@@ -149,11 +149,20 @@ export default function ManageUser() {
       };
 
       if (editingUser) {
+        const updateData = {
+          email: data.email,
+          name: data.name,
+          role: data.role,
+          isApproved: data.isApproved,
+          hasAttemptedLogin: data.hasAttemptedLogin,
+          ...(data.password && { password: data.password }),
+        };
+
         const response = await fetch(`${process.env.NEXT_PUBLIC_UPDATE_USER_API_URL}/${editingUser._id}`, {
           method: 'PATCH',
           headers,
           credentials: 'include',
-          body: JSON.stringify(data),
+          body: JSON.stringify(updateData),
         });
         const responseData = await response.json();
         if (!response.ok) {
@@ -168,12 +177,20 @@ export default function ManageUser() {
           alert(responseData.message);
         }
       } else {
-        console.log('Sending data:', data); // Debug log
+        const createData = {
+          email: data.email,
+          name: data.name,
+          password: data.password,
+          role: data.role,
+          isApproved: data.isApproved,
+          hasAttemptedLogin: data.hasAttemptedLogin,
+        };
+
         const response = await fetch(process.env.NEXT_PUBLIC_ADMIN_CREATE_USER_API_URL!, {
           method: 'POST',
           headers,
           credentials: 'include',
-          body: JSON.stringify(data),
+          body: JSON.stringify(createData),
         });
         const responseData = await response.json();
         if (!response.ok) {
@@ -189,7 +206,7 @@ export default function ManageUser() {
         }
       }
     } catch (error) {
-      console.error('Error:', error); // Debug log
+      console.error('Error:', error);
       alert('Có lỗi xảy ra: ' + error);
     }
   };
@@ -214,6 +231,7 @@ export default function ManageUser() {
               <TableCell>Tên</TableCell>
               <TableCell>Vai trò</TableCell>
               <TableCell>Trạng thái</TableCell>
+              <TableCell>Trạng thái đăng nhập</TableCell>
               <TableCell>Thao tác</TableCell>
             </TableRow>
           </TableHead>
@@ -224,6 +242,7 @@ export default function ManageUser() {
                 <TableCell>{user.name}</TableCell>
                 <TableCell>{user.role}</TableCell>
                 <TableCell>{user.isApproved ? 'Đã duyệt' : 'Chưa duyệt'}</TableCell>
+                <TableCell>{user.hasAttemptedLogin ? 'Đã đăng nhập' : 'Chưa đăng nhập'}</TableCell>
                 <TableCell>
                   <IconButton onClick={() => handleView(user)}>
                     <VisibilityIcon />
@@ -346,6 +365,25 @@ export default function ManageUser() {
                     >
                       <MenuItem value="true">Đã duyệt</MenuItem>
                       <MenuItem value="false">Chưa duyệt</MenuItem>
+                    </Select>
+                  </FormControl>
+                )}
+              />
+
+              <Controller
+                name="hasAttemptedLogin"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth>
+                    <InputLabel>Trạng thái đăng nhập</InputLabel>
+                    <Select
+                      {...field}
+                      label="Trạng thái đăng nhập"
+                      value={field.value ? 'true' : 'false'}
+                      onChange={(e) => field.onChange(e.target.value === 'true')}
+                    >
+                      <MenuItem value="true">Đã đăng nhập</MenuItem>
+                      <MenuItem value="false">Chưa đăng nhập</MenuItem>
                     </Select>
                   </FormControl>
                 )}

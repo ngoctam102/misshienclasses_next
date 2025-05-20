@@ -4,28 +4,28 @@ import { serialize, parse } from 'cookie';
 export async function POST(request: Request) {
   try {
     const cookieHeader = request.headers.get('cookie');
-    if (!cookieHeader) {
-      return NextResponse.json(
-        { message: 'No cookie found' },
-        { status: 401 }
-      );
-    }
+    // if (!cookieHeader) {
+    //   return NextResponse.json(
+    //     { message: 'No cookie found' },
+    //     { status: 401 }
+    //   );
+    // }
     
     // Dùng cookie parser để lấy token
-    const cookies = parse(cookieHeader);
+    const cookies = parse(cookieHeader || '');
     const token = cookies.token;
 
-    if (!token) {
-      return NextResponse.json(
-        { message: 'Token not found in cookie' },
-        { status: 401 }
-      );
-    }
+    // if (!token) {
+    //   return NextResponse.json(
+    //     { message: 'Token not found in cookie' },
+    //     { status: 401 }
+    //   );
+    // }
     const res = await fetch(`${process.env.NEXT_PUBLIC_LOGOUT_API_URL}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Cookie': `token=${token}`
+        'Cookie': `token=${token || ''}`
       }
     });
     const data = await res.json();

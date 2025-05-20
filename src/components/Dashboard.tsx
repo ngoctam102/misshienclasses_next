@@ -48,7 +48,7 @@ export default function Dashboard() {
         setActiveComponent(tab.component);
     }
     return (
-        <div className="p-10 w-full h-[calc(100vh-349px)]">
+        <div className="p-10 w-full h-[calc(100vh-281px)]">
             <div className="rounded-lg w-full h-full flex gap-5">
                 <div className="w-3/12 bg-white rounded-lg">
                     <div className="p-5 flex flex-col gap-10">

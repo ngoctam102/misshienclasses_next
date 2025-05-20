@@ -206,7 +206,7 @@ export default function HandleListeningTest({ test_slug }: { test_slug: string})
                     <HandleScore test_name={title} test_type={type} score={bandScore || 0} duration={ duration*60 - remainingTime }/>
                 )}
             </div>
-            <div className="w-full mt-4 ml-10 flex">
+            <div className="w-full mt-4 pl-10 flex">
                 {passages.map((passage) => (
                     <button
                     type='button'
@@ -224,12 +224,19 @@ export default function HandleListeningTest({ test_slug }: { test_slug: string})
                             <div className="w-[60%] px-4 overflow-y-auto">
                                 <h2 className="font-bold text-2xl mt-4">{selectedPassage.title}</h2>
                                 <div className="mt-2 text-justify leading-loose text-md lg:text-xl">
+                                    {selectedPassage.audio_url && (
+                                        <audio key={selectedPassage.passage_number} controls className="w-full mb-4">
+                                            <source src={selectedPassage.audio_url} type="audio/mpeg" />
+                                            Trình duyệt của bạn không hỗ trợ phát audio.
+                                        </audio>
+                                    )}
                                     {selectedPassage.content && selectedPassage.content.type === 'image' && selectedPassage.content.value ? (
                                         <Image 
-                                            src={`${process.env.NEXT_PUBLIC_TEST_API_URL}${selectedPassage.content.value}`} 
+                                            key={selectedPassage.passage_number}
+                                            src={selectedPassage.content.value} 
                                             alt="Passage content" 
                                             width={500}
-                                            height={300}
+                                            height={500}
                                             className="max-w-full h-auto rounded-lg shadow-md"
                                         />
                                     ) : (
@@ -243,19 +250,27 @@ export default function HandleListeningTest({ test_slug }: { test_slug: string})
                                         <div key={group.group_title} className="leading-normal lg:leading-loose text-md lg:text-xl">
                                             <h3 className="font-bold text-left">{group.group_title}</h3>
                                             <p>{group.group_instruction}</p>
+                                            {/* Thêm phần hiển thị content của group */}
                                             {group.content && (
-                                                <div className="mt-2">
+                                                <div className="mt-4 mb-4">
                                                     {group.content.type === 'image' && group.content.value ? (
                                                         <Image 
-                                                            src={`${process.env.NEXT_PUBLIC_TEST_API_URL}${group.content.value}`} 
+                                                            src={group.content.value} 
                                                             alt="Group content" 
                                                             width={500}
                                                             height={300}
                                                             className="max-w-full h-auto rounded-lg shadow-md"
                                                         />
-                                                    ) : (
-                                                        group.content.value
-                                                    )}
+                                                    ) : group.content.type === 'text' && group.content.value ? (
+                                                        <div className="text-justify">
+                                                            {group.content.value}
+                                                        </div>
+                                                    ) : group.content.type === 'html' && group.content.value ? (
+                                                        <div 
+                                                            className="text-justify"
+                                                            dangerouslySetInnerHTML={{ __html: group.content.value }}
+                                                        />
+                                                    ) : null}
                                                 </div>
                                             )}
                                             {group.given_words && group.given_words.length > 0 && (
@@ -443,7 +458,7 @@ export default function HandleListeningTest({ test_slug }: { test_slug: string})
                     </div>
                 )}
             </div>
-            <div className="w-full flex justify-center items-center mb-10"><button type="submit"
+            <div className="w-full flex justify-center items-center mb-5"><button type="submit"
             className="bg-orange-500 font-bold text-white p-3 rounded-lg hover:cursor-pointer hover:scale-110 hover:text-black transition-all duration-300 ease-in-out">Nộp bài</button></div>
         </form>
     )

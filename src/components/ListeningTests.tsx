@@ -29,9 +29,10 @@ export default function ListeningTests({ tests }: { tests: TestListItem[] }) {
                     sm: 'repeat(2, 1fr)',
                     md: 'repeat(3, 1fr)'
                 },
-                gap: 3,
+                gap: 2,
                 maxWidth: '1200px',
-                margin: '0 auto'
+                margin: '0 auto',
+                height: '100%'
             }}>
                 {tests.map((test) => (
                     <Box key={test.test_slug}>
@@ -51,13 +52,13 @@ export default function ListeningTests({ tests }: { tests: TestListItem[] }) {
                                 flexGrow: 1,
                                 display: 'flex',
                                 flexDirection: 'column',
-                                transition: 'all 300ms ease-in-out',
+                                p: 1.5,
                                 '&:last-child': {
-                                    pb: 2
+                                    pb: 1.5
                                 }
                             }}>
                                 <Typography 
-                                    variant="h6" 
+                                    variant="subtitle1" 
                                     component="h2" 
                                     gutterBottom
                                     sx={{
@@ -66,14 +67,14 @@ export default function ListeningTests({ tests }: { tests: TestListItem[] }) {
                                         display: '-webkit-box',
                                         WebkitLineClamp: 2,
                                         WebkitBoxOrient: 'vertical',
-                                        minHeight: '3.6em',
+                                        minHeight: '2.8em',
                                         lineHeight: '1.2em',
                                         transition: 'all 300ms ease-in-out'
                                     }}
                                 >
                                     {test.title}
                                 </Typography>
-                                <Box display="flex" gap={1} mb={2} sx={{ transition: 'all 300ms ease-in-out' }}>
+                                <Box display="flex" gap={1} mb={1} sx={{ transition: 'all 300ms ease-in-out' }}>
                                     <Chip 
                                         icon={<SchoolIcon />} 
                                         label={test.level} 
@@ -90,13 +91,14 @@ export default function ListeningTests({ tests }: { tests: TestListItem[] }) {
                                     />
                                 </Box>
                             </CardContent>
-                            <CardActions sx={{ p: 2, pt: 0, transition: 'all 300ms ease-in-out' }}>
+                            <CardActions sx={{ p: 1.5, pt: 0, transition: 'all 300ms ease-in-out' }}>
                                 <Button
                                     component={Link}
                                     href={`/listening/start/${test.test_slug}`}
                                     variant="contained"
                                     color="primary"
                                     fullWidth
+                                    size="small"
                                     sx={{ 
                                         transition: 'all 300ms ease-in-out',
                                         '&:hover': {

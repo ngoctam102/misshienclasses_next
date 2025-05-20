@@ -130,12 +130,17 @@ export default function ReadingPage() {
     }
 
     return (
-        <Container maxWidth="lg" sx={{ py: 4 }}>
-            <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ mb: 4 }}>
+        <Container maxWidth="lg" sx={{ 
+            py: 2,
+            height: 'calc(100vh - 281px)',
+            display: 'flex',
+            flexDirection: 'column'
+        }}>
+            <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ mb: 2 }}>
                 Reading Tests
             </Typography>
 
-            <Stack spacing={2} sx={{ mb: 4 }}>
+            <Stack spacing={1} sx={{ mb: 2 }}>
                 <Box display="flex" gap={2} alignItems="center">
                     <TextField
                         label="Tìm kiếm"
@@ -143,8 +148,9 @@ export default function ReadingPage() {
                         value={searchInput}
                         onChange={handleSearchChange}
                         fullWidth
+                        size="small"
                     />
-                    <FormControl sx={{ minWidth: 120 }}>
+                    <FormControl sx={{ minWidth: 120 }} size="small">
                         <InputLabel>Sắp xếp theo</InputLabel>
                         <Select
                             value={sort}
@@ -154,7 +160,7 @@ export default function ReadingPage() {
                             <MenuItem value="createdAt">Ngày tạo</MenuItem>
                         </Select>
                     </FormControl>
-                    <FormControl sx={{ minWidth: 120 }}>
+                    <FormControl sx={{ minWidth: 120 }} size="small">
                         <InputLabel>Thứ tự</InputLabel>
                         <Select
                             value={order}
@@ -168,16 +174,18 @@ export default function ReadingPage() {
                 </Box>
             </Stack>
 
-            <ReadingTests tests={data.data} />
+            <Box sx={{ flex: 1, overflow: 'hidden' }}>
+                <ReadingTests tests={data.data.slice(0, 9)} />
+            </Box>
 
             {data.pagination && (
-                <Box display="flex" justifyContent="center" mt={4}>
+                <Box display="flex" justifyContent="center" mt={2}>
                     <Pagination 
                         count={data.pagination.totalPages} 
                         page={page} 
                         onChange={handlePageChange}
                         color="primary"
-                        size="large"
+                        size="medium"
                     />
                 </Box>
             )}

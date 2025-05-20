@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect } from "react";
-
+import Image from "next/image";
 export default function Navbar() {
     const router = useRouter();
     const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
@@ -11,8 +11,10 @@ export default function Navbar() {
     const pathname = usePathname();
     const checkLoginStatus = async () => {
         try {
+            console.log('>>>Gọi API checkLogin');
             const res = await fetch('/api/checkLogin');
             const data = await res.json();
+            console.log('>>>Response từ API checkLogin:', data);
             setIsLoggedIn(data.loggedIn);
             setName(data.name);
             setRole(data.role);
@@ -25,10 +27,15 @@ export default function Navbar() {
     };
 
     useEffect(() => {
-        // Kiểm tra cookie khi component mount
+        // Chỉ kiểm tra khi pathname thay đổi và không phải ở trang login/signup
+        // if (!pathname.includes('/login') && !pathname.includes('/signup')) {
+        //     checkLoginStatus();
+        // }
+        console.log('>>>Pathname thay đổi:', pathname);
         checkLoginStatus();
 
         const handleLoginSuccess = () => {
+            console.log('>>>Event login-success được trigger');
             checkLoginStatus();
         }
 
@@ -83,13 +90,17 @@ export default function Navbar() {
             });
             const data = await response.json();
             console.log('>>>dữ liệu trả về từ api logout:', data);
-            if (data.success) {
-                console.log('>>>thực hiện logout thành công')
-                setIsLoggedIn(false);
-                setName('');
-                setRole('');
-                router.push('/login');
-            }
+            
+            // Reset state ngay lập tức
+            setIsLoggedIn(false);
+            setName('');
+            setRole('');
+            
+            // Chuyển hướng về trang login
+            router.push('/login');
+            
+            // Force reload trang để đảm bảo state được cập nhật
+            window.location.reload();
         } catch (error) {
             console.error('Error during logout:', error);
             // Nếu có lỗi, vẫn reset state và chuyển về login
@@ -97,6 +108,7 @@ export default function Navbar() {
             setName('');
             setRole('');
             router.push('/login');
+            window.location.reload();
         }
     }
 
@@ -109,9 +121,15 @@ export default function Navbar() {
                     <div className="flex items-center">
                         <Link 
                             href='/' 
-                            className="text-2xl font-bold text-gray-800 hover:text-orange-500 transition-colors duration-300"
+                            className="flex items-center justify-center text-2xl font-bold text-gray-800"
                         >
-                            MISSHIENCLASSES
+                            <Image src="/android-chrome-192x192.png"
+                            alt="logo"
+                            width={50}
+                            height={50}
+                            className="mr-2 hover:scale-110 transition duration-300 ease-in-out"
+                            />
+                            <p className="hover:scale-105 hover:text-orange-500 transition duration-300 ease-in-out">MissHienClasses</p>
                         </Link>
                     </div>
                     
