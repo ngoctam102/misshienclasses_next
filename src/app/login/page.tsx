@@ -51,8 +51,10 @@ function LoginForm() {
                 if (data.loggedIn) {
                     if (data.user.role === 'admin') {
                         router.push('/');
+                        router.refresh();
                     } else {
                         router.push('/pending');
+                        router.refresh();
                     }
                 }
             } catch (error) {
@@ -124,9 +126,11 @@ function LoginForm() {
                 if (responseData.role === 'admin') {
                     // Nếu là admin, chuyển hướng về trang chủ
                     router.push('/');
+                    router.refresh();
                 } else {
                     // Nếu là user thường, chuyển hướng về trang pending
                     router.push('/pending');
+                    router.refresh();
                 }
             } else {
                 toast.error(responseData.message);
