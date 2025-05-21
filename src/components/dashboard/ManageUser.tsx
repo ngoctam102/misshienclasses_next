@@ -22,6 +22,7 @@ import {
   Typography,
   Box,
   FormHelperText,
+  CircularProgress,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -224,40 +225,46 @@ export default function ManageUser() {
       </Box>
 
       <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Email</TableCell>
-              <TableCell>Tên</TableCell>
-              <TableCell>Vai trò</TableCell>
-              <TableCell>Trạng thái</TableCell>
-              <TableCell>Trạng thái đăng nhập</TableCell>
-              <TableCell>Thao tác</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {users.map((user) => (
-              <TableRow key={user._id}>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>{user.name}</TableCell>
-                <TableCell>{user.role}</TableCell>
-                <TableCell>{user.isApproved ? 'Đã duyệt' : 'Chưa duyệt'}</TableCell>
-                <TableCell>{user.hasAttemptedLogin ? 'Đã đăng nhập' : 'Chưa đăng nhập'}</TableCell>
-                <TableCell>
-                  <IconButton onClick={() => handleView(user)}>
-                    <VisibilityIcon />
-                  </IconButton>
-                  <IconButton onClick={() => handleEdit(user)}>
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton onClick={() => handleDelete(user._id)}>
-                    <DeleteIcon />
-                  </IconButton>
-                </TableCell>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Email</TableCell>
+                <TableCell>Tên</TableCell>
+                <TableCell>Vai trò</TableCell>
+                <TableCell>Trạng thái</TableCell>
+                <TableCell>Trạng thái đăng nhập</TableCell>
+                <TableCell>Thao tác</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {users.map((user) => (
+                <TableRow key={user._id}>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>{user.name}</TableCell>
+                  <TableCell>{user.role}</TableCell>
+                  <TableCell>{user.isApproved ? 'Đã duyệt' : 'Chưa duyệt'}</TableCell>
+                  <TableCell>{user.hasAttemptedLogin ? 'Đã đăng nhập' : 'Chưa đăng nhập'}</TableCell>
+                  <TableCell>
+                    <IconButton onClick={() => handleView(user)}>
+                      <VisibilityIcon />
+                    </IconButton>
+                    <IconButton onClick={() => handleEdit(user)}>
+                      <EditIcon />
+                    </IconButton>
+                    <IconButton onClick={() => handleDelete(user._id)}>
+                      <DeleteIcon />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </TableContainer>
 
       <Dialog open={modalOpen} onClose={() => setModalOpen(false)}>

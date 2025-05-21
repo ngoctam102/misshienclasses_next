@@ -951,7 +951,7 @@ export default function CreateTest() {
                                 </div>
 
                                 {/* Options for Multiple Choice and Correct Optional */}
-                                {(currentQuestion.question_type === 'multiple-choice' || currentQuestion.question_type === 'correct-optional') && (
+                                {(currentQuestion.question_type === 'multiple-choice' || currentQuestion.question_type === 'correct-optional' || currentQuestion.question_type === 'matching') && (
                                     <div className="mt-4">
                                         <label className="block mb-2 font-semibold">
                                             Lựa chọn <span className="text-red-500">*</span>
@@ -1008,21 +1008,27 @@ export default function CreateTest() {
                                         Đáp án <span className="text-red-500">*</span>
                                     </label>
                                     {currentQuestion.question_type === 'multiple-choice' ? (
-                                        <select
-                                            value={currentQuestion.answer[0] || ''}
-                                            onChange={(e) => setCurrentQuestion(prev => ({ 
-                                                ...prev, 
-                                                answer: [e.target.value] 
-                                            }))}
-                                            className="w-full p-2 border rounded focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
-                                        >
-                                            <option value="">Chọn đáp án</option>
+                                        <div className="space-y-2">
                                             {(currentQuestion.options || []).map((option, index) => (
-                                                <option key={index} value={option}>
-                                                    {option}
-                                                </option>
+                                                <div key={index} className="flex items-center gap-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={currentQuestion.answer.includes(option)}
+                                                        onChange={(e) => {
+                                                            const newAnswer = e.target.checked
+                                                                ? [...currentQuestion.answer, option]
+                                                                : currentQuestion.answer.filter(a => a !== option);
+                                                            setCurrentQuestion(prev => ({ 
+                                                                ...prev, 
+                                                                answer: newAnswer 
+                                                            }));
+                                                        }}
+                                                        className="w-4 h-4 text-pink-500 border-gray-300 rounded focus:ring-pink-500"
+                                                    />
+                                                    <span className="text-gray-700">{option}</span>
+                                                </div>
                                             ))}
-                                        </select>
+                                        </div>
                                     ) : currentQuestion.question_type === 'matching' ? (
                                         <div className="space-y-2">
                                             {(currentQuestion.options || []).map((option, index) => (

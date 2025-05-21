@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import useSWR from 'swr';
 import debounce from 'lodash/debounce';
 import {
@@ -61,11 +61,16 @@ export default function StudentTestResult() {
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
 
     const debouncedSetSearch = useCallback(
-        debounce((value: string) => {
+        (value: string) => {
             setDebouncedSearchTerm(value);
             setPage(0);
-        }, 1000),
+        },
         []
+    );
+
+    const debouncedSearch = useMemo(
+        () => debounce(debouncedSetSearch, 1000),
+        [debouncedSetSearch]
     );
 
     const params = new URLSearchParams({
@@ -107,7 +112,7 @@ export default function StudentTestResult() {
                     value={searchTerm}
                     onChange={(e) => {
                         setSearchTerm(e.target.value);
-                        debouncedSetSearch(e.target.value);
+                        debouncedSearch(e.target.value);
                     }}
                     InputProps={{
                         startAdornment: (

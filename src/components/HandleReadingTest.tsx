@@ -110,7 +110,7 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
             })
         }, 1000)
         return () => clearInterval(timer);
-    }, [countDown]);
+    }, [countDown, remainingTime]);
 
     useEffect(() => {
         if (remainingTime === 0) {
@@ -118,7 +118,7 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                 formRef.current.requestSubmit();
             }
         }
-    }, [remainingTime])
+    }, [remainingTime, formRef]);
         
     if (isLoading) return <Spinner />
     if (error) return <div>Error: {error.message}</div>

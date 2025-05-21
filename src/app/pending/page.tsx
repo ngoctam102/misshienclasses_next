@@ -1,7 +1,7 @@
 'use client';
 
 import Spinner from "@/components/Spinner";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 
@@ -9,7 +9,7 @@ export default function PendingPage() {
     const router = useRouter();
     const [status, setStatus] = useState<'pending' | 'approved' | 'rejected'>('pending');
 
-    const checkApprovalStatus = async () => {
+    const checkApprovalStatus = useCallback(async () => {
         try {
             const response = await fetch(`${process.env.NEXT_PUBLIC_CHECK_APPROVAL_API_URL}`, {
                 method: "GET",
@@ -72,7 +72,7 @@ export default function PendingPage() {
             toast.error('Có lỗi xảy ra. Vui lòng thử lại sau.');
         }
         return false;
-    };
+    }, [router]);
 
     useEffect(() => {
         let intervalId: NodeJS.Timeout;
@@ -98,7 +98,7 @@ export default function PendingPage() {
                 clearInterval(intervalId);
             }
         };
-    }, []);
+    }, [checkApprovalStatus]);
 
     if (status === 'pending') {
         return (

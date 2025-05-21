@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { toast } from "react-toastify";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import Script from 'next/script';
 
 declare global {
@@ -20,11 +20,16 @@ declare global {
     }
 }
 
-export default function LoginPage() {
+function LoginForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [recaptchaToken, setRecaptchaToken] = useState<string>("");
     const [isRecaptchaInitialized, setIsRecaptchaInitialized] = useState(false);
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     useEffect(() => {
         const message = searchParams.get('message');
@@ -34,8 +39,35 @@ export default function LoginPage() {
     }, [searchParams]);
 
     useEffect(() => {
+        const checkLoginStatus = async () => {
+            try {
+                const res = await fetch('/api/checkLogin', {
+                    method: 'GET',
+                    credentials: 'include',
+                    cache: 'no-store'
+                });
+                const data = await res.json();
+                
+                if (data.loggedIn) {
+                    if (data.user.role === 'admin') {
+                        router.push('/');
+                    } else {
+                        router.push('/pending');
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking login status:', error);
+            }
+        };
+        
+        checkLoginStatus();
+    }, [router]);
+
+    useEffect(() => {
+        if (!isClient) return;
+
         const checkRecaptcha = () => {
-            if (typeof window !== 'undefined' && window.grecaptcha && !isRecaptchaInitialized) {
+            if (window.grecaptcha && !isRecaptchaInitialized) {
                 window.grecaptcha.ready(() => {
                     try {
                         window.grecaptcha.render('recaptcha-container', {
@@ -57,7 +89,7 @@ export default function LoginPage() {
         };
 
         checkRecaptcha();
-    }, [isRecaptchaInitialized]);
+    }, [isClient, isRecaptchaInitialized]);
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -86,7 +118,7 @@ export default function LoginPage() {
             const responseData = await response.json();
             if (responseData.success) {
                 toast.success('Login thành công!');
-                window.dispatchEvent(new Event('login-success'));
+                // window.dispatchEvent(new Event('login-success'));
                 
                 // Kiểm tra role từ response
                 if (responseData.role === 'admin') {
@@ -109,11 +141,13 @@ export default function LoginPage() {
 
     return (
         <div className="flex items-center justify-center h-[calc(100vh-281px)]">
-            <Script
-                src="https://www.google.com/recaptcha/api.js"
-                async
-                defer
-            />
+            {isClient && (
+                <Script
+                    src="https://www.google.com/recaptcha/api.js"
+                    async
+                    defer
+                />
+            )}
             <form className="w-[400px] p-8 bg-white rounded-xl shadow-lg" onSubmit={handleSubmit}>
                 <div className="mb-6 text-center">
                     <h1 className="text-2xl font-bold text-gray-800">Đăng nhập</h1>
@@ -146,7 +180,7 @@ export default function LoginPage() {
                         />
                     </div>
 
-                    <div id="recaptcha-container" className="flex justify-center my-4"></div>
+                    {isClient && <div id="recaptcha-container" className="flex justify-center my-4"></div>}
 
                     <button
                         type="submit"
@@ -166,5 +200,13 @@ export default function LoginPage() {
                 </div>
             </form>
         </div>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <LoginForm />
+        </Suspense>
     );
 }

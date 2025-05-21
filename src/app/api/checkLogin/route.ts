@@ -4,35 +4,46 @@ import { jwtVerify } from 'jose';
 
 export async function GET(request: Request) {
     const cookieHeader = request.headers.get('cookie');
-    console.log('Cookie header:', cookieHeader);
     
     if (!cookieHeader) {
-        console.log('No cookie header found');
         return NextResponse.json({ loggedIn: false }, { status: 200 });
     }
     
     const cookies = parse(cookieHeader);
     const token = cookies.token;
-    console.log('Token from cookie:', token ? 'exists' : 'not found');
     
     if (!token) {
-        console.log('No token found in cookies');
         return NextResponse.json({ loggedIn: false }, { status: 200 });
     }
 
     try {
-        const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-        const { payload } = await jwtVerify(token, secret);
-        console.log('JWT payload:', payload);
-        
-        return NextResponse.json({ 
-            loggedIn: true, 
-            name: payload.name || '', 
-            role: payload.role, 
-            email: payload.email 
-        }, { status: 200 });
-    } catch (error) {
-        console.log('Invalid token', error);
-        return NextResponse.json({ loggedIn: false }, { status: 200 });
+        const { payload } = await jwtVerify(token, new TextEncoder().encode(process.env.JWT_SECRET));
+        // Kiểm tra thời gian hết hạn
+        if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+            return NextResponse.json({ loggedIn: false }, { 
+                status: 401,
+                headers: {
+                    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
+                }
+            });
+        }
+        return NextResponse.json({ loggedIn: true, user: payload }, {
+            headers: {
+                'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            }
+        });
+    } catch {
+        return NextResponse.json({ loggedIn: false }, { 
+            status: 401,
+            headers: {
+                'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            }
+        });
     }
 }

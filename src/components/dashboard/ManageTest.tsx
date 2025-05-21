@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import useSWR from "swr";
+import Image from 'next/image';
 import {
     Box,
     Card,
@@ -611,9 +612,11 @@ export default function ManageTest() {
                                             </label>
                                             {passage.content?.value && (
                                                 <Box sx={{ mt: 2 }}>
-                                                    <img 
+                                                    <Image 
                                                         src={passage.content.value} 
                                                         alt="Passage content" 
+                                                        width={800}
+                                                        height={600}
                                                         style={{ maxWidth: '100%', height: 'auto' }}
                                                     />
                                                 </Box>
@@ -774,9 +777,11 @@ export default function ManageTest() {
                                                             </label>
                                                             {group.content?.value && (
                                                                 <Box sx={{ mt: 2 }}>
-                                                                    <img 
+                                                                    <Image 
                                                                         src={group.content.value} 
                                                                         alt="Group content" 
+                                                                        width={800}
+                                                                        height={600}
                                                                         style={{ maxWidth: '100%', height: 'auto' }}
                                                                     />
                                                                 </Box>

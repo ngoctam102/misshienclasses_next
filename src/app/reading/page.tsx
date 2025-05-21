@@ -1,7 +1,7 @@
 'use client';
 import ReadingTests from '@/components/ReadingTests';
 import useSWR from 'swr';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { 
     Container, 
     Typography, 

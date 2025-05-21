@@ -2,8 +2,16 @@
 
 import { useForm } from 'react-hook-form';
 
-export default function TestForm({ onSubmit }: { onSubmit: (data: any) => void }) {
-  const { register, handleSubmit } = useForm();
+interface TestFormData {
+  test_code: string;
+  type: 'reading' | 'listening';
+  level: 'academic' | 'general';
+  title: string;
+  duration: number;
+}
+
+export default function TestForm({ onSubmit }: { onSubmit: (data: TestFormData) => void }) {
+  const { register, handleSubmit } = useForm<TestFormData>();
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

@@ -110,7 +110,7 @@ export default function HandleListeningTest({ test_slug }: { test_slug: string})
             })
         }, 1000)
         return () => clearInterval(timer);
-    }, [countDown]);
+    }, [countDown, remainingTime]);
 
     useEffect(() => {
         if (remainingTime === 0) {
@@ -118,7 +118,7 @@ export default function HandleListeningTest({ test_slug }: { test_slug: string})
                 formRef.current.requestSubmit();
             }
         }
-    }, [remainingTime])
+    }, [remainingTime, formRef]);
         
     if (isLoading) return <Spinner />
     if (error) return <div>Error: {error.message}</div>
@@ -374,16 +374,37 @@ export default function HandleListeningTest({ test_slug }: { test_slug: string})
                                                         {(question.question_type === 'matching' || question.question_type === 'correct-optional') && (
                                                             <div>
                                                                 <div>
-                                                                    <select className="bg-gray-200 p-2 rounded-lg w-[60%] max-w-[60%]" 
-                                                                    name={`answer-${question.question_number}`}
-                                                                    value={studentAnswers[question.question_number]?.[0] || ''}
-                                                                    onChange={(event) => {handleAnswer(question.question_number, event.target.value)}}
-                                                                    >
-                                                                        <option value="">Select an option</option>
-                                                                        {question?.options?.map((option) => (
-                                                                            <option key={option} value={option}>{option}</option>
-                                                                        ))}
-                                                                    </select>
+                                                                    {question.question_type === 'matching' ? (
+                                                                        <div className="space-y-2">
+                                                                            {question?.options?.map((option, index) => (
+                                                                                <div key={index} className="flex items-center gap-2">
+                                                                                    <span className="w-1/3">{option}</span>
+                                                                                    <input
+                                                                                        type="text"
+                                                                                        value={studentAnswers[question.question_number]?.[index] || ''}
+                                                                                        onChange={(e) => {
+                                                                                            const newAnswers = [...(studentAnswers[question.question_number] || [])];
+                                                                                            newAnswers[index] = e.target.value;
+                                                                                            handleAnswer(question.question_number, e.target.value);
+                                                                                        }}
+                                                                                        className="flex-1 p-2 border rounded focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                                                                                        placeholder="Nhập đáp án tương ứng"
+                                                                                    />
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <select className="bg-gray-200 p-2 rounded-lg w-[60%] max-w-[60%]" 
+                                                                        name={`answer-${question.question_number}`}
+                                                                        value={studentAnswers[question.question_number]?.[0] || ''}
+                                                                        onChange={(event) => {handleAnswer(question.question_number, event.target.value)}}
+                                                                        >
+                                                                            <option value="">Select an option</option>
+                                                                            {question?.options?.map((option) => (
+                                                                                <option key={option} value={option}>{option}</option>
+                                                                            ))}
+                                                                        </select>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                         )}

@@ -1,52 +1,53 @@
 'use client';
 import Link from "next/link";
 import { usePathname, useRouter } from 'next/navigation'
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
+
 export default function Navbar() {
     const router = useRouter();
     const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
     const [name, setName] = useState<string>('');
     const [role, setRole] = useState<string>('');
     const pathname = usePathname();
-    const checkLoginStatus = async () => {
+
+    const checkLoginStatus = useCallback(async () => {
         try {
-            console.log('>>>Gọi API checkLogin');
-            const res = await fetch('/api/checkLogin');
+            const res = await fetch('/api/checkLogin', {
+                method: 'GET',
+                credentials: 'include',
+                cache: 'no-store'
+            });
             const data = await res.json();
-            console.log('>>>Response từ API checkLogin:', data);
+            
+            if (!data.loggedIn) {
+                setIsLoggedIn(false);
+                setName('');
+                setRole('');
+                // Nếu đang ở trang cần xác thực và chưa login, chuyển về trang login
+                if (!pathname.includes('/login') && !pathname.includes('/signup')) {
+                    router.push('/login');
+                }
+                return;
+            }
+            
             setIsLoggedIn(data.loggedIn);
-            setName(data.name);
-            setRole(data.role);
+            setName(data.user.name || '');
+            setRole(data.user.role || '');
         } catch (error) {
             console.error('Error checking login status:', error);
             setIsLoggedIn(false);
             setName('');
             setRole('');
+            if (!pathname.includes('/login') && !pathname.includes('/signup')) {
+                router.push('/login');
+            }
         }
-    };
+    }, [pathname, router]);
 
     useEffect(() => {
-        // Chỉ kiểm tra khi pathname thay đổi và không phải ở trang login/signup
-        // if (!pathname.includes('/login') && !pathname.includes('/signup')) {
-        //     checkLoginStatus();
-        // }
-        console.log('>>>Pathname thay đổi:', pathname);
         checkLoginStatus();
-
-        const handleLoginSuccess = () => {
-            console.log('>>>Event login-success được trigger');
-            checkLoginStatus();
-        }
-
-        window.addEventListener('login-success', handleLoginSuccess);
-
-        return () => {
-            window.removeEventListener('login-success', handleLoginSuccess);
-        }
-    }, [pathname]);
-
-    
+    }, [checkLoginStatus]);
 
     const userTabs = [
         {
@@ -82,14 +83,12 @@ export default function Navbar() {
     ];
 
     const handleLogout = async () => {
-        console.log('>>>hàm handleLogout được gọi')
         try {
-            const response = await fetch('/api/logout', {
+            await fetch('/api/logout', {
                 method: 'POST',
-                credentials: 'include'
+                credentials: 'include',
+                cache: 'no-store'
             });
-            const data = await response.json();
-            console.log('>>>dữ liệu trả về từ api logout:', data);
             
             // Reset state ngay lập tức
             setIsLoggedIn(false);
@@ -103,7 +102,6 @@ export default function Navbar() {
             window.location.reload();
         } catch (error) {
             console.error('Error during logout:', error);
-            // Nếu có lỗi, vẫn reset state và chuyển về login
             setIsLoggedIn(false);
             setName('');
             setRole('');
@@ -111,8 +109,6 @@ export default function Navbar() {
             window.location.reload();
         }
     }
-
-    
 
     return (
         <nav className="bg-white shadow-lg sticky top-0 z-50">
