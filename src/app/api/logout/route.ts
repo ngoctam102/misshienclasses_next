@@ -39,6 +39,7 @@ export async function POST(request: Request) {
       httpOnly: true,
       sameSite: 'strict',
       secure: process.env.NODE_ENV === 'production',
+      domain: process.env.NODE_ENV === 'production' ? process.env.FRONTEND_DOMAIN : undefined
     });
     const response = NextResponse.json({ success: true, message: 'Đăng xuất thành công' });
     response.headers.set('Set-Cookie', expiredCookie);
