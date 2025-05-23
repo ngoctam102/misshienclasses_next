@@ -33,8 +33,6 @@ export default function PendingPage() {
                 });
                 const dataRefresh = await refreshResponse.json();
                 if (dataRefresh.success) {
-                    // Thêm delay nhỏ để đảm bảo cookie được set
-                    await new Promise(resolve => setTimeout(resolve, 500));
                     toast.success('Tài khoản đã được phê duyệt.😍😍');
                     router.replace('/');
                     // Dừng interval ngay lập tức

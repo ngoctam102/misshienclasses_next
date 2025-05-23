@@ -50,15 +50,9 @@ function LoginForm() {
                 
                 if (data.loggedIn) {
                     if (data.user.role === 'admin') {
-                        // router.push('/');
-                        setTimeout(() => {
-                            router.replace('/');
-                        }, 300)
+                        router.replace('/');
                     } else {
-                        // router.push('/pending');
-                        setTimeout(() => {
-                            router.replace('/pending');
-                        }, 300)
+                        router.replace('/pending');
                     }
                 }
             } catch (error) {
@@ -124,19 +118,14 @@ function LoginForm() {
             const responseData = await response.json();
             if (responseData.success) {
                 toast.success('Login thành công!');
-                // window.dispatchEvent(new Event('login-success'));
                 
                 // Kiểm tra role từ response
                 if (responseData.role === 'admin') {
                     // Nếu là admin, chuyển hướng về trang chủ
-                    setTimeout(() => {
-                        router.replace('/');
-                    }, 300)
+                    router.replace('/');
                 } else {
                     // Nếu là user thường, chuyển hướng về trang pending
-                    setTimeout(() => {
-                        router.replace('/pending');
-                    }, 300)
+                    router.replace('/pending');
                 }
             } else {
                 toast.error(responseData.message);
