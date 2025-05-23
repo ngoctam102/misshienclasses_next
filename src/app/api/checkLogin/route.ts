@@ -6,14 +6,14 @@ export async function GET(request: Request) {
     const cookieHeader = request.headers.get('cookie');
     
     if (!cookieHeader) {
-        return NextResponse.json({ loggedIn: false }, { status: 200 });
+        return NextResponse.json({ loggedIn: false }, { status: 401 });
     }
     
     const cookies = parse(cookieHeader);
     const token = cookies.token;
     
     if (!token) {
-        return NextResponse.json({ loggedIn: false }, { status: 200 });
+        return NextResponse.json({ loggedIn: false }, { status: 401 });
     }
 
     try {
@@ -30,6 +30,7 @@ export async function GET(request: Request) {
             });
         }
         return NextResponse.json({ loggedIn: true, user: payload }, {
+            status: 200,
             headers: {
                 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
                 'Pragma': 'no-cache',
