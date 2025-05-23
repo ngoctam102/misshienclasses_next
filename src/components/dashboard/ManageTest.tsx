@@ -1113,8 +1113,16 @@ export default function ManageTest() {
     };
 
     return (
-        <Box sx={{ p: 2, lg: { p: 3 } }}>
-            <Typography variant="h5" lg={{ variant: "h4" }} component="h1" gutterBottom>
+        <Box sx={{ p: { xs: 2, lg: 3 } }}>
+            <Typography 
+                variant="h5" 
+                component="h1" 
+                gutterBottom
+                sx={{ 
+                    fontSize: { xs: '1.25rem', lg: '1.5rem' },
+                    fontWeight: 'bold'
+                }}
+            >
                 Quản lý bài test
             </Typography>
 
@@ -1125,7 +1133,7 @@ export default function ManageTest() {
             )}
 
             {isLoading && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', my: 2, lg: { my: 3 } }}>
+                <Box sx={{ display: 'flex', justifyContent: 'center', my: { xs: 2, lg: 3 } }}>
                     <CircularProgress />
                 </Box>
             )}
@@ -1143,13 +1151,35 @@ export default function ManageTest() {
                         return (
                             <Card key={test._id}>
                                 <CardContent>
-                                    <Typography variant="h6" component="h2" gutterBottom>
+                                    <Typography 
+                                        variant="h6" 
+                                        component="h2" 
+                                        gutterBottom
+                                        sx={{ 
+                                            fontSize: { xs: '1rem', lg: '1.25rem' },
+                                            fontWeight: 'bold'
+                                        }}
+                                    >
                                         {test.title}
                                     </Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                    <Typography 
+                                        variant="body2" 
+                                        color="text.secondary" 
+                                        sx={{ 
+                                            mb: 1,
+                                            fontSize: { xs: '0.75rem', lg: '0.875rem' }
+                                        }}
+                                    >
                                         {test.test_slug}
                                     </Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                    <Typography 
+                                        variant="body2" 
+                                        color="text.secondary" 
+                                        sx={{ 
+                                            mb: 2,
+                                            fontSize: { xs: '0.75rem', lg: '0.875rem' }
+                                        }}
+                                    >
                                         {test.type} - {test.level} ({test.duration} phút)
                                     </Typography>
                                     <Stack direction="row" spacing={1}>
