@@ -6,6 +6,19 @@ interface ErrorWithMessage {
     message: string;
 }
 
+interface UserInfo {
+    loggedIn: boolean;
+    user?: {
+        sub: string;
+        name: string;
+        role: string;
+        email: string;
+        approved: boolean;
+        iat: number;
+        exp: number;
+    };
+}
+
 function isErrorWithMessage(error: unknown): error is ErrorWithMessage {
     return (
         typeof error === 'object' &&
@@ -30,7 +43,7 @@ export default function HandleScore({test_name, test_type, score, duration}: {
     score: number,
     duration: number
 }) {
-    const [userInfo, setUserInfo] = useState<{name: string, role: string, email: string}>({name: '', role: '', email: ''});
+    const [userInfo, setUserInfo] = useState<UserInfo>({ loggedIn: false });
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [saveError, setSaveError] = useState<string | null>(null);
@@ -44,11 +57,8 @@ export default function HandleScore({test_name, test_type, score, duration}: {
                 setIsLoading(true);
                 console.log('Đang gọi API checkLogin...');
                 const res = await fetch('/api/checkLogin');
-                if (!res.ok) {
-                    throw new Error('Không thể lấy thông tin user');
-                }
                 const data = await res.json();
-                console.log('Thông tin user:', data);
+                console.log('Thông tin user từ API checkLogin:', data);
                 setUserInfo(data);
             } catch (error: unknown) {
                 const errorWithMessage = toErrorWithMessage(error);
@@ -64,20 +74,33 @@ export default function HandleScore({test_name, test_type, score, duration}: {
     // Lưu điểm
     useEffect(() => {
         const saveScore = async () => {
-            console.log('Kiểm tra điều kiện lưu điểm:', {
-                hasName: !!userInfo.name,
-                hasRole: !!userInfo.role,
-                hasEmail: !!userInfo.email,
-                isSaved,
-                hasAttemptedSave: hasAttemptedSave.current,
-                test_name,
-                test_type,
-                score,
-                duration
-            });
+            console.log('=== BẮT ĐẦU QUÁ TRÌNH LƯU ĐIỂM ===');
+            console.log('Trạng thái userInfo hiện tại:', userInfo);
+            
+            if (!userInfo.loggedIn) {
+                console.log('User chưa đăng nhập');
+                return;
+            }
 
-            if (!userInfo.name || !userInfo.role || !userInfo.email || isSaved || hasAttemptedSave.current) {
-                console.log('Không đủ điều kiện để lưu điểm');
+            if (!userInfo.user) {
+                console.log('Không có thông tin user');
+                return;
+            }
+
+            const { name, role, email } = userInfo.user;
+            console.log('Thông tin user cần thiết:', { name, role, email });
+
+            if (!name || !role || !email) {
+                console.log('Thiếu thông tin user cần thiết:', {
+                    hasName: !!name,
+                    hasRole: !!role,
+                    hasEmail: !!email
+                });
+                return;
+            }
+
+            if (isSaved || hasAttemptedSave.current) {
+                console.log('Điểm đã được lưu hoặc đang trong quá trình lưu');
                 return;
             }
             
@@ -85,40 +108,41 @@ export default function HandleScore({test_name, test_type, score, duration}: {
                 hasAttemptedSave.current = true;
                 setIsSaving(true);
                 setSaveError(null);
-                console.log('Đang gọi API lưu điểm...');
-                console.log('URL API:', process.env.NEXT_PUBLIC_SAVE_TEST_SCORE_API_URL);
-                console.log('Data gửi đi:', {
-                    name: userInfo.name,
-                    role: userInfo.role,
-                    email: userInfo.email,
+
+                const apiUrl = process.env.NEXT_PUBLIC_SAVE_TEST_SCORE_API_URL;
+                console.log('URL API lưu điểm:', apiUrl);
+                
+                if (!apiUrl) {
+                    throw new Error('Không tìm thấy URL API lưu điểm. Vui lòng kiểm tra biến môi trường NEXT_PUBLIC_SAVE_TEST_SCORE_API_URL');
+                }
+
+                const requestBody = {
+                    name,
+                    role,
+                    email,
                     test_name,
                     test_type,
                     score,
                     duration
-                });
+                };
 
-                const res = await fetch(`${process.env.NEXT_PUBLIC_SAVE_TEST_SCORE_API_URL}`, {
+                console.log('Data gửi đi:', requestBody);
+
+                const res = await fetch(apiUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     credentials: 'include',
-                    body: JSON.stringify({
-                        name: userInfo.name,
-                        role: userInfo.role,
-                        email: userInfo.email,
-                        test_name,
-                        test_type,
-                        score,
-                        duration
-                    }),
+                    body: JSON.stringify(requestBody),
                 });
+
                 console.log('Response status:', res.status);
                 const data = await res.json();
                 console.log('Response data:', data);
 
                 if (!res.ok) {
-                    throw new Error(data.message || 'Không thể lưu điểm');
+                    throw new Error(data.message || `Lỗi HTTP: ${res.status}`);
                 }
                 if (!data.success) {
                     throw new Error(data.message || 'Lưu điểm không thành công');
@@ -132,6 +156,7 @@ export default function HandleScore({test_name, test_type, score, duration}: {
                 console.error('Lỗi khi lưu điểm:', errorWithMessage.message);
             } finally {
                 setIsSaving(false);
+                console.log('=== KẾT THÚC QUÁ TRÌNH LƯU ĐIỂM ===');
             }
         };
         saveScore();

@@ -6,14 +6,28 @@ export async function GET(request: Request) {
     const cookieHeader = request.headers.get('cookie');
     
     if (!cookieHeader) {
-        return NextResponse.json({ loggedIn: false }, { status: 401 });
+        return NextResponse.json({ loggedIn: false }, { 
+            status: 200,
+            headers: {
+                'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            }
+        });
     }
     
     const cookies = parse(cookieHeader);
     const token = cookies.token;
     
     if (!token) {
-        return NextResponse.json({ loggedIn: false }, { status: 401 });
+        return NextResponse.json({ loggedIn: false }, { 
+            status: 200,
+            headers: {
+                'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            }
+        });
     }
 
     try {
@@ -21,7 +35,7 @@ export async function GET(request: Request) {
         // Kiểm tra thời gian hết hạn
         if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
             return NextResponse.json({ loggedIn: false }, { 
-                status: 401,
+                status: 200,
                 headers: {
                     'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
                     'Pragma': 'no-cache',
@@ -39,7 +53,7 @@ export async function GET(request: Request) {
         });
     } catch {
         return NextResponse.json({ loggedIn: false }, { 
-            status: 401,
+            status: 200,
             headers: {
                 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
                 'Pragma': 'no-cache',
