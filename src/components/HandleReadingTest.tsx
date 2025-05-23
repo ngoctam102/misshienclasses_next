@@ -223,10 +223,10 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                 ))}
             </div>
             <div className="passage-container w-full h-[65vh] mb-10">
-                {selectedPassage && ( // if there is a selected passage, then render the passage
-                    <div className="w-[95vw] mx-auto bg-white flex h-full p-5 shadow-lg rounded-2xl overflow-auto">
-                        <div className="flex w-10/12 rounded-lg">
-                            <div className="w-[60%] px-4 overflow-y-auto">
+                {selectedPassage && (
+                    <div className="w-[95vw] mx-auto bg-white flex flex-col lg:flex-row h-full p-2 lg:p-5 shadow-lg rounded-2xl overflow-auto">
+                        <div className="flex flex-col lg:flex-row w-full lg:w-10/12 rounded-lg">
+                            <div className="w-full lg:w-[60%] px-2 lg:px-4 overflow-y-auto">
                                 <h2 className="font-bold text-2xl mt-4">{selectedPassage.title}</h2>
                                 <div className="mt-2 text-justify leading-loose text-md lg:text-xl">
                                     {selectedPassage.content && selectedPassage.content.type === 'image' && selectedPassage.content.value ? (
@@ -243,7 +243,7 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                                     )}
                                 </div>
                             </div>
-                            <div className="w-[40%] mt-5 px-5 overflow-y-auto h-full">
+                            <div className="w-full lg:w-[40%] mt-5 px-2 lg:px-5 overflow-y-auto h-full">
                                 <div>
                                     {selectedPassage.question_groups.map((group) => (
                                         <div key={group.group_title} className="leading-normal lg:leading-loose text-md lg:text-xl">
@@ -410,7 +410,7 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                                 </div>
                             </div>
                         </div>
-                        <div className="w-2/12 pl-2 lg:pl-6 rounded-lg text-md lg:text-xl overflow-y-auto">
+                        <div className="w-full lg:w-2/12 pl-2 lg:pl-6 rounded-lg text-sm lg:text-xl overflow-y-auto">
                             <div className="w-full flex flex-col">
                                 <div className="font-semibold">Thời gian: {duration} phút</div>
                                 <div className="font-semibold mt-5">

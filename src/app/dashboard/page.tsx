@@ -26,6 +26,8 @@ export default async function DashboardPage() {
             redirect('/unauthorized')
         }
     return (
-        <Dashboard />
+        <div className="min-h-[calc(100vh-281px)] py-4 lg:py-6 px-2 lg:px-4">
+            <Dashboard />
+        </div>
     );
 }

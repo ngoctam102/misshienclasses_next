@@ -112,24 +112,24 @@ export default function Navbar() {
 
     return (
         <nav className="bg-white shadow-lg sticky top-0 z-50">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex justify-between h-16">
+            <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
+                <div className="flex justify-between h-14 lg:h-16">
                     <div className="flex items-center">
                         <Link 
                             href='/' 
-                            className="flex items-center justify-center text-2xl font-bold text-gray-800"
+                            className="flex items-center justify-center text-lg lg:text-2xl font-bold text-gray-800"
                         >
                             <Image src="/android-chrome-192x192.png"
                             alt="logo"
-                            width={50}
-                            height={50}
+                            width={40}
+                            height={40}
                             className="mr-2 hover:scale-110 transition duration-300 ease-in-out"
                             />
                             <p className="hover:scale-105 hover:text-orange-500 transition duration-300 ease-in-out">MissHienClasses</p>
                         </Link>
                     </div>
                     
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-1 lg:space-x-4">
                         {isLoggedIn && role === 'admin' ? 
                             adminTabs.map(tab => {
                                 const isActive = tab.href === '/' ? pathname === '/' : pathname.startsWith(tab.href);
@@ -137,7 +137,7 @@ export default function Navbar() {
                                     <Link
                                         key={tab.label}
                                         href={tab.href}
-                                        className={`px-3 py-2 rounded-md text-lg font-medium transition-all duration-300 ease-in-out ${
+                                        className={`px-2 lg:px-3 py-1 lg:py-2 rounded-md text-sm lg:text-lg font-medium transition-all duration-300 ease-in-out ${
                                             isActive 
                                                 ? 'bg-orange-500 text-white' 
                                                 : 'text-gray-600 hover:bg-orange-500 hover:text-white hover:scale-110'
@@ -153,7 +153,7 @@ export default function Navbar() {
                                     <Link
                                         key={tab.label}
                                         href={tab.href}
-                                        className={`px-3 py-2 rounded-md text-lg font-medium transition-all duration-300 ease-in-out ${
+                                        className={`px-2 lg:px-3 py-1 lg:py-2 rounded-md text-sm lg:text-lg font-medium transition-all duration-300 ease-in-out ${
                                             isActive 
                                                 ? 'bg-orange-500 text-white' 
                                                 : 'text-gray-600 hover:bg-orange-500 hover:text-white hover:scale-110'
@@ -170,16 +170,16 @@ export default function Navbar() {
                         {!isLoggedIn ? (
                             <Link 
                                 href="/signup" 
-                                className="ml-4 px-4 py-2 hover:cursor-pointer rounded-md text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 hover:scale-110 transition duration-300 ease-in-out"
+                                className="ml-2 lg:ml-4 px-2 lg:px-4 py-1 lg:py-2 hover:cursor-pointer rounded-md text-xs lg:text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 hover:scale-110 transition duration-300 ease-in-out"
                             >
                                 Đăng ký
                             </Link>
                         ) : (
-                            <div className="flex items-center space-x-4">
-                                <span className="text-gray-600 font-medium">Xin chào, {name}</span>
+                            <div className="flex items-center space-x-2 lg:space-x-4">
+                                <span className="text-xs lg:text-sm text-gray-600 font-medium">Xin chào, {name}</span>
                                 <button 
                                     onClick={handleLogout}
-                                    className="px-4 py-2 hover:cursor-pointer rounded-md text-sm font-medium text-white bg-red-500 hover:bg-red-600 hover:scale-110 transition duration-300 ease-in-out"
+                                    className="px-2 lg:px-4 py-1 lg:py-2 hover:cursor-pointer rounded-md text-xs lg:text-sm font-medium text-white bg-red-500 hover:bg-red-600 hover:scale-110 transition duration-300 ease-in-out"
                                 >
                                     Đăng xuất
                                 </button>

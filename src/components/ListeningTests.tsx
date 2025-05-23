@@ -27,12 +27,14 @@ export default function ListeningTests({ tests }: { tests: TestListItem[] }) {
                 gridTemplateColumns: {
                     xs: '1fr',
                     sm: 'repeat(2, 1fr)',
-                    md: 'repeat(3, 1fr)'
+                    md: 'repeat(2, 1fr)',
+                    lg: 'repeat(3, 1fr)'
                 },
-                gap: 2,
+                gap: { xs: 1, sm: 2 },
                 maxWidth: '1200px',
                 margin: '0 auto',
-                height: '100%'
+                height: '100%',
+                padding: { xs: 1, sm: 2 }
             }}>
                 {tests.map((test) => (
                     <Box key={test.test_slug}>

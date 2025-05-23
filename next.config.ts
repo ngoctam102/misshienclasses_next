@@ -25,6 +25,16 @@ const nextConfig: NextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     formats: ['image/webp'],
   },
+  async rewrites() {
+    return [
+      {
+        source: '/backend-api/:path*',
+        destination: process.env.NODE_ENV === 'production'
+          ? 'https://misshientest.com/backend-api/:path*'
+          : 'http://localhost:8000/backend-api/:path*',
+      },
+    ];
+  },
   headers: async () => {
     return [
       {
@@ -69,6 +79,10 @@ const nextConfig: NextConfig = {
             key: 'Referrer-Policy',
             value: 'origin-when-cross-origin',
           },
+          {
+            key: 'Content-Security-Policy',
+            value: "default-src 'self' https: http: data: blob: 'unsafe-inline' 'unsafe-eval'; connect-src 'self' https://misshientest.com http://localhost:8000; img-src 'self' https: http: data: blob:;",
+          },
         ],
       },
     ];
@@ -77,15 +91,6 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   compress: true,
   productionBrowserSourceMaps: false,
-  async redirects() {
-    return [
-      {
-        source: '/old-path',
-        destination: '/new-path',
-        permanent: true,
-      },
-    ]
-  },
 };
 
-export default nextConfig;
+export default nextConfig; 

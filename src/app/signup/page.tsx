@@ -94,26 +94,26 @@ export default function SignUpPage() {
     }
 
     return (
-        <div className="flex items-center justify-center h-[calc(100vh-281px)]">
+        <div className="flex items-center justify-center min-h-[calc(100vh-281px)] py-8">
             <Script
                 src="https://www.google.com/recaptcha/api.js"
                 async
                 defer
             />
-            <form onSubmit={handleSubmit} className="p-8 w-[400px] bg-white shadow-lg rounded-lg">
-                <div className="flex flex-col space-y-4">
-                    <h1 className="font-bold text-2xl text-center mb-5">Đăng kí</h1>
+            <form onSubmit={handleSubmit} className="w-[90%] max-w-[400px] p-4 lg:p-8 bg-white shadow-lg rounded-lg">
+                <div className="flex flex-col space-y-3 lg:space-y-4">
+                    <h1 className="font-bold text-xl lg:text-2xl text-center mb-3 lg:mb-5">Đăng kí</h1>
                     <label htmlFor="name" className="font-medium text-sm mb-1 text-gray-700">Tên</label>
-                    <input id="name" name="name" type="text" className="w-full py-2 px-4 border-1 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="Nhập tên của bạn" />
+                    <input id="name" name="name" type="text" className="w-full py-2 px-3 lg:px-4 border-1 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="Nhập tên của bạn" required />
                     <label htmlFor="email" className="font-medium text-sm mb-1 text-gray-700">Email</label>
-                    <input id="email" type="email" name="email" className="w-full py-2 px-4 border-1 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="Nhập email của bạn" />
+                    <input id="email" type="email" name="email" className="w-full py-2 px-3 lg:px-4 border-1 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="Nhập email của bạn" required />
                     <label htmlFor="password" className="font-medium text-sm mb-1 text-gray-700">Mật khẩu</label>
-                    <input id="password" type="password" name="password" className="w-full py-2 px-4 border-1 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="Nhập mật khẩu" />
-                    <div id="recaptcha-container" className="flex justify-center my-4"></div>
-                    <button type="submit" className="bg-blue-500 p-3 rounded-lg mt-3 text-white font-bold hover:bg-blue-700 hover:scale-105 transition duration-300 hover:cursor-pointer">Đăng kí</button>
+                    <input id="password" type="password" name="password" className="w-full py-2 px-3 lg:px-4 border-1 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="Nhập mật khẩu" required />
+                    <div id="recaptcha-container" className="flex justify-center my-3 lg:my-4"></div>
+                    <button type="submit" className="bg-blue-500 p-2 lg:p-3 rounded-lg mt-3 text-white font-bold hover:bg-blue-700 hover:scale-105 transition duration-300 hover:cursor-pointer">Đăng kí</button>
                 </div>
-                <div className="mt-4 text-center">
-                    <p className="text-sm text-gray-600">Đã có tài khoản?{' '}
+                <div className="mt-3 lg:mt-4 text-center">
+                    <p className="text-xs lg:text-sm text-gray-600">Đã có tài khoản?{' '}
                         <Link href="/login" className="text-blue-500 hover:text-blue-700 hover:scale-105 inline-block transition duration-300">Đăng nhập</Link>
                     </p>
                 </div>

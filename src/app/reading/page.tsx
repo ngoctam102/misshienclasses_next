@@ -131,17 +131,18 @@ export default function ReadingPage() {
 
     return (
         <Container maxWidth="lg" sx={{ 
-            py: 2,
+            py: { xs: 1, sm: 2 },
             height: 'calc(100vh - 281px)',
             display: 'flex',
-            flexDirection: 'column'
+            flexDirection: 'column',
+            px: { xs: 1, sm: 2 }
         }}>
-            <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ mb: 2 }}>
+            <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ mb: { xs: 1, sm: 2 } }}>
                 Reading Tests
             </Typography>
 
-            <Stack spacing={1} sx={{ mb: 2 }}>
-                <Box display="flex" gap={2} alignItems="center">
+            <Stack spacing={1} sx={{ mb: { xs: 1, sm: 2 } }}>
+                <Box display="flex" gap={{ xs: 1, sm: 2 }} alignItems="center" flexDirection={{ xs: 'column', sm: 'row' }}>
                     <TextField
                         label="Tìm kiếm"
                         variant="outlined"

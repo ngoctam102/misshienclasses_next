@@ -18,7 +18,7 @@ export default function PendingPage() {
 
             if (!response.ok) {
                 toast.error('Vui lòng đăng nhập lại 😊😊');
-                return router.push('/login');
+                return router.replace('/login');
             }
 
             const data = await response.json();
@@ -36,12 +36,12 @@ export default function PendingPage() {
                     // Thêm delay nhỏ để đảm bảo cookie được set
                     await new Promise(resolve => setTimeout(resolve, 500));
                     toast.success('Tài khoản đã được phê duyệt.😍😍');
-                    router.push('/');
+                    router.replace('/');
                     // Dừng interval ngay lập tức
                     return true;
                 } else {
                     toast.error('Có lỗi xảy ra, vui lòng thử lại');
-                    router.push('/login');
+                    router.replace('/login');
                     return true;
                 }
             } else {
@@ -55,11 +55,11 @@ export default function PendingPage() {
                     const dataLogout = await res.json();
                     if (dataLogout.success) {
                         toast.success('Đăng xuất thành công');
-                        router.push('/login');
+                        router.replace('/login');
                         return true;
                     } else {
                         toast.error('Có lỗi xảy ra, vui lòng thử lại');
-                        router.push('/login');
+                        router.replace('/login');
                         return true;
                     }
                 } else {

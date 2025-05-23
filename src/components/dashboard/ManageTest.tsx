@@ -1113,8 +1113,8 @@ export default function ManageTest() {
     };
 
     return (
-        <Box sx={{ p: 3 }}>
-            <Typography variant="h4" component="h1" gutterBottom>
+        <Box sx={{ p: 2, lg: { p: 3 } }}>
+            <Typography variant="h5" lg={{ variant: "h4" }} component="h1" gutterBottom>
                 Quản lý bài test
             </Typography>
 
@@ -1125,7 +1125,7 @@ export default function ManageTest() {
             )}
 
             {isLoading && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'center', my: 2, lg: { my: 3 } }}>
                     <CircularProgress />
                 </Box>
             )}
@@ -1136,7 +1136,7 @@ export default function ManageTest() {
                 </Alert>
             )}
 
-            <Stack spacing={3}>
+            <Stack spacing={2}>
                 {tests && tests.length > 0 ? (
                     tests.map((test) => {
                         console.log('Rendering test:', test);
@@ -1187,9 +1187,7 @@ export default function ManageTest() {
                             </Card>
                         );
                     })
-                ) : (
-                    <Typography>Không có bài test nào</Typography>
-                )}
+                ) : null}
             </Stack>
 
             <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>

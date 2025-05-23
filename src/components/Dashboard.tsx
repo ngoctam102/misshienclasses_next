@@ -48,26 +48,26 @@ export default function Dashboard() {
         setActiveComponent(tab.component);
     }
     return (
-        <div className="p-10 w-full h-[calc(100vh-281px)]">
-            <div className="rounded-lg w-full h-full flex gap-5">
-                <div className="w-3/12 bg-white rounded-lg">
-                    <div className="p-5 flex flex-col gap-10">
-                        <h1 className="text-4xl font-bold text-center">DASHBOARD</h1>
-                        <div className="flex flex-col items-center justify-center gap-1 text-lg font-semibold w-[80%] mx-auto">
+        <div className="p-2 lg:p-6 w-full min-h-[calc(100vh-281px)]">
+            <div className="rounded-lg w-full h-full flex flex-col lg:flex-row gap-2 lg:gap-4">
+                <div className="w-full lg:w-3/12 bg-white rounded-lg">
+                    <div className="p-2 lg:p-4 flex flex-col gap-3 lg:gap-4">
+                        <h1 className="text-xl lg:text-2xl font-bold text-center">DASHBOARD</h1>
+                        <div className="flex flex-col items-center justify-center gap-1 text-xs lg:text-sm font-semibold w-[95%] lg:w-[90%] mx-auto">
                             {tabs.map(tab => {
                                 return (
                                     <div key={tab.label} className="w-full">
                                         <button 
                                         onClick={() => handleClick(tab)}
                                         type="button" 
-                                        className={`bg-amber-200 p-5 w-full rounded-lg transition duration-300 hover:scale-105 hover:cursor-pointer hover:text-white hover:bg-amber-500 ${activeTab === tab.label ? 'bg-amber-500 text-white' : ''}`}>{tab.label}</button>
+                                        className={`bg-amber-200 p-2 lg:p-3 w-full rounded-lg transition duration-300 hover:scale-105 hover:cursor-pointer hover:text-white hover:bg-amber-500 ${activeTab === tab.label ? 'bg-amber-500 text-white' : ''}`}>{tab.label}</button>
                                     </div>
                                 );
                             })}
                         </div>
                     </div>
                 </div>
-                <div className="w-9/12 bg-white rounded-lg overflow-hidden">
+                <div className="w-full lg:w-9/12 bg-white rounded-lg overflow-hidden">
                     <div className="h-full overflow-auto">
                         {renderContent()}
                     </div>

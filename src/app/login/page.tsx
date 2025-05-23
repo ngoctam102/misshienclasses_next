@@ -50,9 +50,15 @@ function LoginForm() {
                 
                 if (data.loggedIn) {
                     if (data.user.role === 'admin') {
-                        router.push('/');
+                        // router.push('/');
+                        setTimeout(() => {
+                            router.replace('/');
+                        }, 300)
                     } else {
-                        router.push('/pending');
+                        // router.push('/pending');
+                        setTimeout(() => {
+                            router.replace('/pending');
+                        }, 300)
                     }
                 }
             } catch (error) {
@@ -123,10 +129,14 @@ function LoginForm() {
                 // Kiểm tra role từ response
                 if (responseData.role === 'admin') {
                     // Nếu là admin, chuyển hướng về trang chủ
-                    router.push('/');
+                    setTimeout(() => {
+                        router.replace('/');
+                    }, 300)
                 } else {
                     // Nếu là user thường, chuyển hướng về trang pending
-                    router.push('/pending');
+                    setTimeout(() => {
+                        router.replace('/pending');
+                    }, 300)
                 }
             } else {
                 toast.error(responseData.message);
@@ -140,7 +150,7 @@ function LoginForm() {
     };
 
     return (
-        <div className="flex items-center justify-center h-[calc(100vh-281px)]">
+        <div className="flex items-center justify-center min-h-[calc(100vh-281px)] py-8">
             {isClient && (
                 <Script
                     src="https://www.google.com/recaptcha/api.js"
@@ -148,12 +158,12 @@ function LoginForm() {
                     defer
                 />
             )}
-            <form className="w-[400px] p-8 bg-white rounded-xl shadow-lg" onSubmit={handleSubmit}>
-                <div className="mb-6 text-center">
-                    <h1 className="text-2xl font-bold text-gray-800">Đăng nhập</h1>
+            <form className="w-[90%] max-w-[400px] p-4 lg:p-8 bg-white rounded-xl shadow-lg" onSubmit={handleSubmit}>
+                <div className="mb-4 lg:mb-6 text-center">
+                    <h1 className="text-xl lg:text-2xl font-bold text-gray-800">Đăng nhập</h1>
                 </div>
                 
-                <div className="space-y-4">
+                <div className="space-y-3 lg:space-y-4">
                     <div>
                         <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                             Email
@@ -162,8 +172,9 @@ function LoginForm() {
                             name="email"
                             type="email"
                             id="email"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                            className="w-full px-3 lg:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
                             placeholder="Nhập email của bạn"
+                            required
                         />
                     </div>
 
@@ -175,23 +186,24 @@ function LoginForm() {
                             name="password"
                             type="password"
                             id="password"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                            className="w-full px-3 lg:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
                             placeholder="Nhập mật khẩu"
+                            required
                         />
                     </div>
 
-                    {isClient && <div id="recaptcha-container" className="flex justify-center my-4"></div>}
+                    {isClient && <div id="recaptcha-container" className="flex justify-center my-3 lg:my-4"></div>}
 
                     <button
                         type="submit"
-                        className="w-full mt-3 py-2.5 px-4 bg-blue-600 hover:bg-blue-700 hover:scale-105 transition-all duration-300 text-white font-medium rounded-lg hover:cursor-pointer"
+                        className="w-full mt-3 py-2 lg:py-2.5 px-4 bg-blue-600 hover:bg-blue-700 hover:scale-105 transition-all duration-300 text-white font-medium rounded-lg hover:cursor-pointer"
                     >
                         Đăng nhập
                     </button>
                 </div>
 
-                <div className="mt-4 text-center">
-                    <p className="text-sm text-gray-600">
+                <div className="mt-3 lg:mt-4 text-center">
+                    <p className="text-xs lg:text-sm text-gray-600">
                         Chưa có tài khoản?{'   '}
                         <Link href="/signup" className="text-blue-600 hover:text-blue-700 hover:scale-105 inline-block transition duration-300">
                             Đăng ký ngay
