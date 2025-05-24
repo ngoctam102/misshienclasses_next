@@ -36,6 +36,7 @@ export interface Passage {
   title?: string;
   content?: Content;
   audio_url?: string;
+  transcript?: string;
   question_groups: QuestionGroup[];
 }
 

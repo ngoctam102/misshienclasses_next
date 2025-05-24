@@ -138,6 +138,7 @@ export default function ManageTest() {
                     if (passage.title) cleanedPassage.title = passage.title;
                     if (passage.content) cleanedPassage.content = passage.content;
                     if (passage.audio_url) cleanedPassage.audio_url = passage.audio_url;
+                    if (passage.transcript) cleanedPassage.transcript = passage.transcript;
 
                     // Nếu có question_groups được cập nhật
                     if (passage.question_groups) {
@@ -277,6 +278,9 @@ export default function ManageTest() {
 
                     const passageAudioUrl = formData.get(`passages[${passageIndex}].audio_url`) as string;
                     if (passageAudioUrl) updatedPassage.audio_url = passageAudioUrl;
+
+                    const passageTranscript = formData.get(`passages[${passageIndex}].transcript`) as string;
+                    if (passageTranscript) updatedPassage.transcript = passageTranscript;
 
                     // Xử lý question groups
                     if (passage.question_groups) {
@@ -660,6 +664,27 @@ export default function ManageTest() {
                                             )}
                                         </Box>
                                     )}
+
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700">Audio URL</label>
+                                        <input
+                                            type="text"
+                                            name={`passages[${passageIndex}].audio_url`}
+                                            defaultValue={passage.audio_url}
+                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm"
+                                        />
+                                    </div>
+
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700">Transcript (Optional)</label>
+                                        <textarea
+                                            name={`passages[${passageIndex}].transcript`}
+                                            defaultValue={passage.transcript}
+                                            rows={4}
+                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm"
+                                            placeholder="Nhập transcript cho bài nghe (không bắt buộc)"
+                                        />
+                                    </div>
 
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <Typography variant="subtitle2">Question Groups</Typography>

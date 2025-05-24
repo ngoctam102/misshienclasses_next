@@ -2,11 +2,9 @@
 
 import Spinner from "@/components/Spinner";
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 
 export default function PendingPage() {
-    const router = useRouter();
     const [status, setStatus] = useState<'pending' | 'approved' | 'rejected'>('pending');
 
     const checkApprovalStatus = useCallback(async () => {
@@ -17,8 +15,9 @@ export default function PendingPage() {
             });
 
             if (!response.ok) {
-                toast.error('Vui lòng đăng nhập lại 😊😊');
-                return router.replace('/login');
+                toast.error('Vui lòng đăng nhập lại 😊');
+                window.location.href = '/login';
+                return true;
             }
 
             const data = await response.json();
@@ -34,12 +33,12 @@ export default function PendingPage() {
                 const dataRefresh = await refreshResponse.json();
                 if (dataRefresh.success) {
                     toast.success('Tài khoản đã được phê duyệt.😍😍');
-                    router.replace('/');
+                    window.location.href = '/';
                     // Dừng interval ngay lập tức
                     return true;
                 } else {
                     toast.error('Có lỗi xảy ra, vui lòng thử lại');
-                    router.replace('/login');
+                    window.location.href = '/login';
                     return true;
                 }
             } else {
@@ -53,11 +52,11 @@ export default function PendingPage() {
                     const dataLogout = await res.json();
                     if (dataLogout.success) {
                         toast.success('Đăng xuất thành công');
-                        router.replace('/login');
+                        window.location.href = '/login';
                         return true;
                     } else {
                         toast.error('Có lỗi xảy ra, vui lòng thử lại');
-                        router.replace('/login');
+                        window.location.href = '/login';
                         return true;
                     }
                 } else {
@@ -70,7 +69,7 @@ export default function PendingPage() {
             toast.error('Có lỗi xảy ra. Vui lòng thử lại sau.');
         }
         return false;
-    }, [router]);
+    }, []);
 
     useEffect(() => {
         let intervalId: NodeJS.Timeout;

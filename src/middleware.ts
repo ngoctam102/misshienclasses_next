@@ -14,7 +14,6 @@ export async function middleware(req: NextRequest) {
       const loginUrl = new URL('/login', req.url);
       loginUrl.searchParams.set('message', 'Vui lòng đăng nhập để tiếp tục');
       const response = NextResponse.redirect(loginUrl);
-
       return response;
     }
     return NextResponse.next();
@@ -23,19 +22,11 @@ export async function middleware(req: NextRequest) {
   try {
     const secret = new TextEncoder().encode(process.env.JWT_SECRET);
     const { payload } = await jwtVerify(token, secret);
-    console.log('Middleware payload:', payload);
     
     const isApproved = payload.approved === true;
     const isOnPendingPage = req.nextUrl.pathname === '/pending';
     const isAdmin = payload.role === 'admin';
     
-    console.log('Middleware checks:', {
-      isApproved,
-      isOnPendingPage,
-      isAdmin,
-      pathname: req.nextUrl.pathname
-    });
-
     // Nếu là admin, cho phép truy cập tất cả các trang trừ /pending
     if (isAdmin) {
       if (isOnPendingPage) {
@@ -57,15 +48,12 @@ export async function middleware(req: NextRequest) {
 
     return NextResponse.next();
   } catch (err) {
-    console.log('>>>>>>VÀO ĐƯỢC CATCH BLOG>>>>');
     console.error('Middleware error:', err);
     const loginUrl = new URL('/login', req.url);
     
     // Kiểm tra xem lỗi có phải do token hết hạn không
     if (err instanceof Error && 'code' in err && err.code === 'ERR_JWT_EXPIRED') {
-      console.log('>>>TOken hết hạn, thực hiện logout.....');
       try {
-        console.log('Token expired, calling logout API...');
         // Gọi API logout để reset trạng thái user
         const res = await fetch(`${process.env.NEXT_PUBLIC_LOGOUT_API_URL}`, {
           method: 'POST',
@@ -77,13 +65,17 @@ export async function middleware(req: NextRequest) {
         
         if (!res.ok) {
           console.error('Logout API call failed:', await res.text());
-        } else {
-          console.log('Logout API call successfully');
         }
         
         // Xóa cookie token ở client
         const response = NextResponse.redirect(loginUrl);
-        response.cookies.set('token', '', { path: '/', expires: new Date(0) });
+        response.cookies.set('token', '', { 
+          path: '/', 
+          expires: new Date(0),
+          domain: process.env.NODE_ENV === 'production' ? process.env.FRONTEND_DOMAIN : undefined,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict'
+        });
         loginUrl.searchParams.set('message', 'Phiên làm việc đã hết hạn, vui lòng đăng nhập lại');
         return response;
       } catch (logoutError) {
@@ -95,7 +87,6 @@ export async function middleware(req: NextRequest) {
     }
     
     const response = NextResponse.redirect(loginUrl);
-
     return response;
   }
 }

@@ -122,10 +122,10 @@ function LoginForm() {
                 // Kiểm tra role từ response
                 if (responseData.role === 'admin') {
                     // Nếu là admin, chuyển hướng về trang chủ
-                    router.replace('/');
+                    window.location.href = '/';
                 } else {
                     // Nếu là user thường, chuyển hướng về trang pending
-                    router.replace('/pending');
+                    window.location.href = '/pending';
                 }
             } else {
                 toast.error(responseData.message);

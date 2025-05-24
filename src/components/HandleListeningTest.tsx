@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import Image from 'next/image';
 import HandleScore from './HandleScore';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography } from '@mui/material';
 
 export default function HandleListeningTest({ test_slug }: { test_slug: string}) {
     const [selectedPassage, setSelectedPassage] = useState<Passage | null>(null);
@@ -16,6 +17,7 @@ export default function HandleListeningTest({ test_slug }: { test_slug: string})
     const [countDown, setCountDown] = useState<boolean>(false);
     const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
     const [result, setResult] = useState<Record<number, boolean> | null>(null);
+    const [showTranscript, setShowTranscript] = useState<boolean>(false);
     const questionRef = useRef<(HTMLDivElement | null)[]>([]);
     const formRef = useRef<HTMLFormElement | null>(null);
     const [focusQuestion, setFocusQuestion] = useState<number | null>(null);
@@ -204,6 +206,16 @@ export default function HandleListeningTest({ test_slug }: { test_slug: string})
                 </div>
                 {showScore && (
                     <HandleScore test_name={title} test_type={type} score={bandScore || 0} duration={ duration*60 - remainingTime }/>
+                )}
+                {selectedPassage?.transcript && (
+                    <Button 
+                        variant="contained" 
+                        color="primary"
+                        onClick={() => setShowTranscript(true)}
+                        sx={{ mt: 2 }}
+                    >
+                        Xem Transcript
+                    </Button>
                 )}
             </div>
             <div className="w-full mt-4 pl-10 flex">
@@ -481,6 +493,25 @@ export default function HandleListeningTest({ test_slug }: { test_slug: string})
             </div>
             <div className="w-full flex justify-center items-center mb-5"><button type="submit"
             className="bg-orange-500 font-bold text-white p-3 rounded-lg hover:cursor-pointer hover:scale-110 hover:text-black transition-all duration-300 ease-in-out">Nộp bài</button></div>
+
+            <Dialog 
+                open={showTranscript} 
+                onClose={() => setShowTranscript(false)}
+                maxWidth="md"
+                fullWidth
+            >
+                <DialogTitle>
+                    Transcript - {selectedPassage?.title}
+                </DialogTitle>
+                <DialogContent>
+                    <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', mt: 2 }}>
+                        {selectedPassage?.transcript}
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setShowTranscript(false)}>Đóng</Button>
+                </DialogActions>
+            </Dialog>
         </form>
     )
 }
