@@ -31,7 +31,7 @@ import {
     Delete as DeleteIcon,
     Visibility as VisibilityIcon
 } from "@mui/icons-material";
-import { Test as BaseTest, TestType, TestLevel, Passage, QuestionGroup, Question, QuestionType, ContentType } from "@/types/test";
+import { Test as BaseTest, TestType, TestLevel, Passage, QuestionGroup, Question, QuestionType } from "@/types/test";
 import { useDebounce } from "@/hooks/useDebounce";
 import { SelectChangeEvent } from "@mui/material";
 import TiptapEditor from '../editor/TiptapEditor';
@@ -219,27 +219,27 @@ export default function ManageTest() {
         // Tạo một bản sao của test hiện tại
         const updatedData: Partial<Test> = {
             ...selectedTest,
-            test_slug: e.currentTarget.test_slug.value,
-            type: e.currentTarget.type.value as TestType,
-            level: e.currentTarget.level.value as TestLevel,
-            title: e.currentTarget.title.value,
-            duration: Number(e.currentTarget.duration.value),
+            test_slug: (document.getElementById('test_slug') as HTMLInputElement).value,
+            type: (document.getElementById('type') as HTMLSelectElement).value as TestType,
+            level: (document.getElementById('level') as HTMLSelectElement).value as TestLevel,
+            title: (document.getElementById('title') as HTMLInputElement).value,
+            duration: Number((document.getElementById('duration') as HTMLInputElement).value),
             passages: selectedTest.passages.map((passage, passageIndex) => {
                 const updatedPassage: Passage = {
                     ...passage,
                     passage_number: passage.passage_number,
-                    title: e.currentTarget[`passages[${passageIndex}].title`]?.value || passage.title,
+                    title: (document.getElementById(`passages[${passageIndex}].title`) as HTMLInputElement).value || passage.title,
                     content: passage.content ? {
                         ...passage.content,
                         value: passage.content.value
                     } : undefined,
-                    audio_url: e.currentTarget[`passages[${passageIndex}].audio_url`]?.value || passage.audio_url,
-                    transcript: e.currentTarget[`passages[${passageIndex}].transcript`]?.value || passage.transcript,
+                    audio_url: (document.getElementById(`passages[${passageIndex}].audio_url`) as HTMLInputElement).value || passage.audio_url,
+                    transcript: (document.getElementById(`passages[${passageIndex}].transcript`) as HTMLInputElement).value || passage.transcript,
                     question_groups: passage.question_groups.map((group, groupIndex) => {
                         const updatedGroup: QuestionGroup = {
                             ...group,
-                            group_title: e.currentTarget[`passages[${passageIndex}].question_groups[${groupIndex}].group_title`]?.value || group.group_title,
-                            group_instruction: e.currentTarget[`passages[${passageIndex}].question_groups[${groupIndex}].group_instruction`]?.value || group.group_instruction,
+                            group_title: (document.getElementById(`passages[${passageIndex}].question_groups[${groupIndex}].group_title`) as HTMLInputElement).value || group.group_title,
+                            group_instruction: (document.getElementById(`passages[${passageIndex}].question_groups[${groupIndex}].group_instruction`) as HTMLInputElement).value || group.group_instruction,
                             content: group.content ? {
                                 ...group.content,
                                 value: group.content.value
@@ -247,11 +247,11 @@ export default function ManageTest() {
                             given_words: group.given_words || [],
                             questions: group.questions.map((question, questionIndex) => ({
                                 ...question,
-                                question_number: Number(e.currentTarget[`passages[${passageIndex}].question_groups[${groupIndex}].questions[${questionIndex}].question_number`]?.value) || question.question_number,
-                                question_type: e.currentTarget[`passages[${passageIndex}].question_groups[${groupIndex}].questions[${questionIndex}].question_type`]?.value as QuestionType || question.question_type,
-                                question_text: e.currentTarget[`passages[${passageIndex}].question_groups[${groupIndex}].questions[${questionIndex}].question_text`]?.value || question.question_text,
+                                question_number: Number((document.getElementById(`passages[${passageIndex}].question_groups[${groupIndex}].questions[${questionIndex}].question_number`) as HTMLInputElement).value) || question.question_number,
+                                question_type: (document.getElementById(`passages[${passageIndex}].question_groups[${groupIndex}].questions[${questionIndex}].question_type`) as HTMLSelectElement).value as QuestionType || question.question_type,
+                                question_text: (document.getElementById(`passages[${passageIndex}].question_groups[${groupIndex}].questions[${questionIndex}].question_text`) as HTMLInputElement).value || question.question_text,
                                 answer: question.answer || [],
-                                explaination: e.currentTarget[`passages[${passageIndex}].question_groups[${groupIndex}].questions[${questionIndex}].explaination`]?.value || question.explaination || '',
+                                explaination: (document.getElementById(`passages[${passageIndex}].question_groups[${groupIndex}].questions[${questionIndex}].explaination`) as HTMLInputElement).value || question.explaination || '',
                                 options: question.options || []
                             }))
                         };
