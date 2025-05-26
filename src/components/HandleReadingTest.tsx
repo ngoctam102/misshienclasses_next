@@ -238,9 +238,17 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                                             height={500}
                                             className="max-w-full h-auto rounded-lg shadow-md"
                                         />
-                                    ) : (
-                                        selectedPassage.content?.value
-                                    )}
+                                    ) : selectedPassage.content?.type === 'text' && selectedPassage.content?.value ? (
+                                        <div 
+                                            className="text-justify prose prose-sm lg:prose-base max-w-none [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-2 [&_li]:mb-2 [&_p]:mb-2"
+                                            dangerouslySetInnerHTML={{ __html: selectedPassage.content.value }}
+                                        />
+                                    ) : selectedPassage.content?.type === 'html' && selectedPassage.content?.value ? (
+                                        <div 
+                                            className="text-justify prose prose-sm lg:prose-base max-w-none [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-2 [&_li]:mb-2 [&_p]:mb-2"
+                                            dangerouslySetInnerHTML={{ __html: selectedPassage.content.value }}
+                                        />
+                                    ) : null}
                                 </div>
                             </div>
                             <div className="w-full lg:w-[40%] mt-5 px-2 lg:px-5 overflow-y-auto h-full">
@@ -261,12 +269,13 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                                                             className="max-w-full h-auto rounded-lg shadow-md"
                                                         />
                                                     ) : group.content.type === 'text' && group.content.value ? (
-                                                        <div className="text-justify">
-                                                            {group.content.value}
-                                                        </div>
+                                                        <div 
+                                                            className="text-justify prose prose-sm lg:prose-base max-w-none [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-2 [&_li]:mb-2 [&_p]:mb-2"
+                                                            dangerouslySetInnerHTML={{ __html: group.content.value }}
+                                                        />
                                                     ) : group.content.type === 'html' && group.content.value ? (
                                                         <div 
-                                                            className="text-justify"
+                                                            className="text-justify prose prose-sm lg:prose-base max-w-none [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-2 [&_li]:mb-2 [&_p]:mb-2"
                                                             dangerouslySetInnerHTML={{ __html: group.content.value }}
                                                         />
                                                     ) : null}

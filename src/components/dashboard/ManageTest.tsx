@@ -34,6 +34,7 @@ import {
 import { Test as BaseTest, TestType, TestLevel, Passage, QuestionGroup, Question, QuestionType, ContentType } from "@/types/test";
 import { useDebounce } from "@/hooks/useDebounce";
 import { SelectChangeEvent } from "@mui/material";
+import TiptapEditor from '../editor/TiptapEditor';
 
 // Mở rộng interface Test để thêm _id
 interface Test extends BaseTest {
@@ -150,71 +151,9 @@ export default function ManageTest() {
         try {
             console.log('Original data to update:', updatedData);
 
-            // Chỉ lấy những trường cần thiết từ form data
-            const cleanedData: Partial<Test> = {};
-
-            // Nếu có thông tin cơ bản được cập nhật
-            if (updatedData.test_slug) cleanedData.test_slug = updatedData.test_slug;
-            if (updatedData.type) cleanedData.type = updatedData.type;
-            if (updatedData.level) cleanedData.level = updatedData.level;
-            if (updatedData.title) cleanedData.title = updatedData.title;
-            if (updatedData.duration) cleanedData.duration = updatedData.duration;
-
-            // Nếu có passages được cập nhật
-            if (updatedData.passages) {
-                cleanedData.passages = updatedData.passages.map(passage => {
-                    const cleanedPassage: Passage = {
-                        passage_number: passage.passage_number,
-                        question_groups: []
-                    };
-
-                    if (passage.title) cleanedPassage.title = passage.title;
-                    if (passage.content) cleanedPassage.content = passage.content;
-                    if (passage.audio_url) cleanedPassage.audio_url = passage.audio_url;
-                    if (passage.transcript) cleanedPassage.transcript = passage.transcript;
-
-                    // Nếu có question_groups được cập nhật
-                    if (passage.question_groups) {
-                        cleanedPassage.question_groups = passage.question_groups.map(group => {
-                            const cleanedGroup: QuestionGroup = {
-                                questions: []
-                            };
-
-                            if (group.group_title) cleanedGroup.group_title = group.group_title;
-                            if (group.group_instruction) cleanedGroup.group_instruction = group.group_instruction;
-                            if (group.content) cleanedGroup.content = group.content;
-                            if (group.given_words) cleanedGroup.given_words = group.given_words;
-
-                            // Nếu có questions được cập nhật
-                            if (group.questions) {
-                                cleanedGroup.questions = group.questions.map(question => {
-                                    const updatedQuestion: Question = {
-                                        question_number: question.question_number,
-                                        question_type: question.question_type,
-                                        question_text: question.question_text,
-                                        answer: question.answer,
-                                        explaination: question.explaination || ''
-                                    };
-
-                                    if (question.options) {
-                                        updatedQuestion.options = question.options;
-                                    }
-
-                                    return updatedQuestion;
-                                });
-                            }
-
-                            return cleanedGroup;
-                        });
-                    }
-
-                    return cleanedPassage;
-                });
-            }
-
             // Loại bỏ các trường không mong muốn
-            const finalData = removeUnwantedFields(cleanedData);
-            console.log('Final data to send:', finalData);
+            const cleanedData = removeUnwantedFields(updatedData);
+            console.log('Final data to send:', cleanedData);
 
             const response = await fetch(`${process.env.NEXT_PUBLIC_TEST_API_URL}/${testId}`, {
                 method: 'PATCH',
@@ -223,7 +162,7 @@ export default function ManageTest() {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
                 },
-                body: JSON.stringify(finalData)
+                body: JSON.stringify(cleanedData)
             });
             
             if (!response.ok) {
@@ -273,128 +212,61 @@ export default function ManageTest() {
         setIsEditing(false);
     };
 
-    const renderTestForm = (test: Test) => {
-        const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-            e.preventDefault();
-            const formData = new FormData(e.currentTarget);
-            
-            // Tạo một bản sao của test hiện tại
-            const updatedData: Partial<Test> = {
-                ...test,
-                test_slug: formData.get("test_slug") as string,
-                type: formData.get("type") as TestType,
-                level: formData.get("level") as TestLevel,
-                title: formData.get("title") as string,
-                duration: Number(formData.get("duration"))
-            };
+    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        if (!selectedTest) return;
 
-            // Xử lý passages và questions
-            if (test.passages) {
-                updatedData.passages = test.passages.map((passage, passageIndex) => {
-                    const updatedPassage: Passage = {
-                        passage_number: passage.passage_number,
-                        question_groups: []
-                    };
-
-                    // Lấy thông tin passage
-                    const passageTitle = formData.get(`passages[${passageIndex}].title`) as string;
-                    if (passageTitle) updatedPassage.title = passageTitle;
-
-                    const passageContent = formData.get(`passages[${passageIndex}].content`) as string;
-                    const passageContentType = formData.get(`passages[${passageIndex}].content_type`) as ContentType;
-                    if (passageContent) {
-                        updatedPassage.content = {
-                            type: passageContentType || 'text',
-                            value: passageContent
+        // Tạo một bản sao của test hiện tại
+        const updatedData: Partial<Test> = {
+            ...selectedTest,
+            test_slug: e.currentTarget.test_slug.value,
+            type: e.currentTarget.type.value as TestType,
+            level: e.currentTarget.level.value as TestLevel,
+            title: e.currentTarget.title.value,
+            duration: Number(e.currentTarget.duration.value),
+            passages: selectedTest.passages.map((passage, passageIndex) => {
+                const updatedPassage: Passage = {
+                    ...passage,
+                    passage_number: passage.passage_number,
+                    title: e.currentTarget[`passages[${passageIndex}].title`]?.value || passage.title,
+                    content: passage.content ? {
+                        ...passage.content,
+                        value: passage.content.value
+                    } : undefined,
+                    audio_url: e.currentTarget[`passages[${passageIndex}].audio_url`]?.value || passage.audio_url,
+                    transcript: e.currentTarget[`passages[${passageIndex}].transcript`]?.value || passage.transcript,
+                    question_groups: passage.question_groups.map((group, groupIndex) => {
+                        const updatedGroup: QuestionGroup = {
+                            ...group,
+                            group_title: e.currentTarget[`passages[${passageIndex}].question_groups[${groupIndex}].group_title`]?.value || group.group_title,
+                            group_instruction: e.currentTarget[`passages[${passageIndex}].question_groups[${groupIndex}].group_instruction`]?.value || group.group_instruction,
+                            content: group.content ? {
+                                ...group.content,
+                                value: group.content.value
+                            } : undefined,
+                            given_words: group.given_words || [],
+                            questions: group.questions.map((question, questionIndex) => ({
+                                ...question,
+                                question_number: Number(e.currentTarget[`passages[${passageIndex}].question_groups[${groupIndex}].questions[${questionIndex}].question_number`]?.value) || question.question_number,
+                                question_type: e.currentTarget[`passages[${passageIndex}].question_groups[${groupIndex}].questions[${questionIndex}].question_type`]?.value as QuestionType || question.question_type,
+                                question_text: e.currentTarget[`passages[${passageIndex}].question_groups[${groupIndex}].questions[${questionIndex}].question_text`]?.value || question.question_text,
+                                answer: question.answer || [],
+                                explaination: e.currentTarget[`passages[${passageIndex}].question_groups[${groupIndex}].questions[${questionIndex}].explaination`]?.value || question.explaination || '',
+                                options: question.options || []
+                            }))
                         };
-                    }
-
-                    const passageAudioUrl = formData.get(`passages[${passageIndex}].audio_url`) as string;
-                    if (passageAudioUrl) updatedPassage.audio_url = passageAudioUrl;
-
-                    const passageTranscript = formData.get(`passages[${passageIndex}].transcript`) as string;
-                    if (passageTranscript) updatedPassage.transcript = passageTranscript;
-
-                    // Xử lý question groups
-                    if (passage.question_groups) {
-                        updatedPassage.question_groups = passage.question_groups.map((group, groupIndex) => {
-                            const updatedGroup: QuestionGroup = {
-                                questions: []
-                            };
-
-                            // Lấy thông tin group
-                            const groupTitle = formData.get(`passages[${passageIndex}].question_groups[${groupIndex}].group_title`) as string;
-                            if (groupTitle) updatedGroup.group_title = groupTitle;
-
-                            const groupInstruction = formData.get(`passages[${passageIndex}].question_groups[${groupIndex}].group_instruction`) as string;
-                            if (groupInstruction) updatedGroup.group_instruction = groupInstruction;
-
-                            const groupContent = formData.get(`passages[${passageIndex}].question_groups[${groupIndex}].content`) as string;
-                            const groupContentType = formData.get(`passages[${passageIndex}].question_groups[${groupIndex}].content_type`) as ContentType;
-                            if (groupContent) {
-                                updatedGroup.content = {
-                                    type: groupContentType || 'text',
-                                    value: groupContent
-                                };
-                            }
-
-                            // Xử lý given_words
-                            const givenWordsText = formData.get(`passages[${passageIndex}].question_groups[${groupIndex}].given_words`) as string;
-                            if (givenWordsText) {
-                                updatedGroup.given_words = givenWordsText.split('\n').filter(Boolean);
-                            } else {
-                                updatedGroup.given_words = group.given_words || [];
-                            }
-
-                            // Xử lý questions
-                            if (group.questions) {
-                                updatedGroup.questions = group.questions.map((question, questionIndex) => {
-                                    const questionNumber = Number(formData.get(`passages[${passageIndex}].question_groups[${groupIndex}].questions[${questionIndex}].question_number`));
-                                    const questionType = formData.get(`passages[${passageIndex}].question_groups[${groupIndex}].questions[${questionIndex}].question_type`) as string;
-                                    const questionText = formData.get(`passages[${passageIndex}].question_groups[${groupIndex}].questions[${questionIndex}].question_text`) as string;
-                                    const optionsText = formData.get(`passages[${passageIndex}].question_groups[${groupIndex}].questions[${questionIndex}].options`) as string;
-                                    const answerText = formData.get(`passages[${passageIndex}].question_groups[${groupIndex}].questions[${questionIndex}].answer`) as string;
-                                    const explaination = formData.get(`passages[${passageIndex}].question_groups[${groupIndex}].questions[${questionIndex}].explaination`) as string;
-
-                                    const updatedQuestion: Question = {
-                                        question_number: questionNumber,
-                                        question_type: questionType as QuestionType,
-                                        question_text: questionText,
-                                        answer: [],
-                                        explaination: explaination || question.explaination || ''
-                                    };
-
-                                    // Xử lý đáp án dựa trên loại câu hỏi
-                                    if (questionType === 'true-false-not-given') {
-                                        updatedQuestion.answer = [answerText];
-                                    } else if (answerText) {
-                                        updatedQuestion.answer = answerText.split('\n').filter(Boolean);
-                                    } else {
-                                        updatedQuestion.answer = question.answer || [];
-                                    }
-
-                                    if (optionsText) {
-                                        updatedQuestion.options = optionsText.split('\n').filter(Boolean);
-                                    } else if (question.options) {
-                                        updatedQuestion.options = question.options;
-                                    }
-
-                                    return updatedQuestion;
-                                });
-                            }
-
-                            return updatedGroup;
-                        });
-                    }
-
-                    return updatedPassage;
-                });
-            }
-
-            console.log('Data to update:', updatedData);
-            updateTest(test._id, updatedData);
+                        return updatedGroup;
+                    })
+                };
+                return updatedPassage;
+            })
         };
 
+        console.log('Data to update:', updatedData);
+        updateTest(selectedTest._id, updatedData);
+    };
+
+    const renderTestForm = (test: Test) => {
         // Xử lý upload file audio
         const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>, passageIndex: number) => {
             const file = e.target.files?.[0];
@@ -618,14 +490,28 @@ export default function ManageTest() {
                                         </Select>
                                     </FormControl>
 
-                                    {passage.content?.type === 'text' && (
-                                        <TextField
-                                            fullWidth
-                                            label="Nội dung"
-                                            name={`passages[${passageIndex}].content`}
-                                            defaultValue={passage.content?.value}
-                                            multiline
-                                            rows={4}
+                                    {(!passage.content || passage.content.type === 'text') && (
+                                        <TiptapEditor
+                                            content={passage.content?.value || ''}
+                                            onChange={(newContent) => {
+                                                setSelectedTest(prev => {
+                                                    if (!prev) return null;
+                                                    const newPassages = [...prev.passages];
+                                                    const currentPassage = newPassages[passageIndex];
+                                                    newPassages[passageIndex] = {
+                                                        ...currentPassage,
+                                                        content: {
+                                                            ...currentPassage.content,
+                                                            type: currentPassage.content?.type || 'text',
+                                                            value: newContent
+                                                        }
+                                                    };
+                                                    return {
+                                                        ...prev,
+                                                        passages: newPassages
+                                                    };
+                                                });
+                                            }}
                                         />
                                     )}
 
@@ -803,14 +689,28 @@ export default function ManageTest() {
                                                         </Select>
                                                     </FormControl>
 
-                                                    {group.content?.type === 'text' && (
-                                                        <TextField
-                                                            fullWidth
-                                                            label="Nội dung nhóm"
-                                                            name={`passages[${passageIndex}].question_groups[${groupIndex}].content`}
-                                                            defaultValue={group.content?.value}
-                                                            multiline
-                                                            rows={2}
+                                                    {(!group.content || group.content.type === 'text') && (
+                                                        <TiptapEditor
+                                                            content={group.content?.value || ''}
+                                                            onChange={(newContent) => {
+                                                                setSelectedTest(prev => {
+                                                                    if (!prev) return null;
+                                                                    const newPassages = [...prev.passages];
+                                                                    const currentGroup = newPassages[passageIndex].question_groups[groupIndex];
+                                                                    newPassages[passageIndex].question_groups[groupIndex] = {
+                                                                        ...currentGroup,
+                                                                        content: {
+                                                                            ...currentGroup.content,
+                                                                            type: currentGroup.content?.type || 'text',
+                                                                            value: newContent
+                                                                        }
+                                                                    };
+                                                                    return {
+                                                                        ...prev,
+                                                                        passages: newPassages
+                                                                    };
+                                                                });
+                                                            }}
                                                         />
                                                     )}
 
