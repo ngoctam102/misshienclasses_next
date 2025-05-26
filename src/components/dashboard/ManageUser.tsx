@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import {
   Table,
@@ -23,6 +23,9 @@ import {
   Box,
   FormHelperText,
   CircularProgress,
+  Pagination,
+  Stack,
+  SelectChangeEvent,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -30,6 +33,7 @@ import {
   Visibility as VisibilityIcon,
   Add as AddIcon,
 } from '@mui/icons-material';
+import { useDebounce } from '@/hooks/useDebounce';
 
 interface User {
   _id: string;
@@ -40,6 +44,15 @@ interface User {
   hasAttemptedLogin: boolean;
   approvedAt?: Date;
   lastLoginAt?: Date;
+}
+
+interface PaginationData {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
 }
 
 interface FormValues {
@@ -58,6 +71,14 @@ export default function ManageUser() {
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [viewingUser, setViewingUser] = useState<User | null>(null);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [sort, setSort] = useState('createdAt');
+  const [order, setOrder] = useState('desc');
+  const [searchInput, setSearchInput] = useState('');
+  const debouncedSearch = useDebounce(searchInput, 500);
+  const [pagination, setPagination] = useState<PaginationData | null>(null);
+
   const { control, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({
     defaultValues: {
       email: '',
@@ -69,24 +90,60 @@ export default function ManageUser() {
     }
   });
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(process.env.NEXT_PUBLIC_ALL_USER_API_URL!, {
+      const url = `${process.env.NEXT_PUBLIC_ALL_USER_API_URL}?page=${page}&limit=${limit}&sort=${sort}&order=${order}&search=${debouncedSearch}`;
+      console.log('Fetching users from URL:', url);
+      
+      const response = await fetch(url, {
         credentials: 'include',
       });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
-      setUsers(data);
-    } catch {
+      console.log('API Response:', data);
+
+      if (data.success) {
+        setUsers(data.data);
+        setPagination(data.pagination);
+      } else {
+        console.error('API Error:', data);
+        alert('Không thể tải danh sách người dùng');
+      }
+    } catch (error) {
+      console.error('Fetch Error:', error);
       alert('Không thể tải danh sách người dùng');
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, limit, sort, order, debouncedSearch]);
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [fetchUsers]);
+
+  const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
+    setPage(value);
+  };
+
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchInput(event.target.value);
+    setPage(1);
+  };
+
+  const handleSortChange = (event: SelectChangeEvent) => {
+    setSort(event.target.value);
+    setPage(1);
+  };
+
+  const handleOrderChange = (event: SelectChangeEvent) => {
+    setOrder(event.target.value);
+    setPage(1);
+  };
 
   const handleCreate = () => {
     setEditingUser(null);
@@ -214,7 +271,7 @@ export default function ManageUser() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Box sx={{ mb: 2 }}>
+      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
@@ -222,6 +279,40 @@ export default function ManageUser() {
         >
           Tạo mới người dùng
         </Button>
+
+        <Stack direction="row" spacing={2} alignItems="center">
+          <TextField
+            label="Tìm kiếm"
+            variant="outlined"
+            value={searchInput}
+            onChange={handleSearchChange}
+            size="small"
+          />
+          <FormControl sx={{ minWidth: 120 }} size="small">
+            <InputLabel>Sắp xếp theo</InputLabel>
+            <Select
+              value={sort}
+              label="Sắp xếp theo"
+              onChange={handleSortChange}
+            >
+              <MenuItem value="createdAt">Ngày tạo</MenuItem>
+              <MenuItem value="name">Tên</MenuItem>
+              <MenuItem value="email">Email</MenuItem>
+              <MenuItem value="role">Vai trò</MenuItem>
+            </Select>
+          </FormControl>
+          <FormControl sx={{ minWidth: 120 }} size="small">
+            <InputLabel>Thứ tự</InputLabel>
+            <Select
+              value={order}
+              label="Thứ tự"
+              onChange={handleOrderChange}
+            >
+              <MenuItem value="desc">Mới nhất</MenuItem>
+              <MenuItem value="asc">Cũ nhất</MenuItem>
+            </Select>
+          </FormControl>
+        </Stack>
       </Box>
 
       <TableContainer component={Paper}>
@@ -266,6 +357,18 @@ export default function ManageUser() {
           </Table>
         )}
       </TableContainer>
+
+      {pagination && pagination.totalPages > 0 && (
+        <Box display="flex" justifyContent="center" mt={3}>
+          <Pagination 
+            count={pagination.totalPages} 
+            page={page} 
+            onChange={handlePageChange}
+            color="primary"
+            size="medium"
+          />
+        </Box>
+      )}
 
       <Dialog open={modalOpen} onClose={() => setModalOpen(false)}>
         <DialogTitle>

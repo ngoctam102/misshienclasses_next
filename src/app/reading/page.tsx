@@ -60,7 +60,7 @@ interface ApiResponse {
 
 export default function ReadingPage() {
     const [page, setPage] = useState(1);
-    const [limit] = useState(10);
+    const [limit] = useState(9);
     const [sort, setSort] = useState('createdAt');
     const [order, setOrder] = useState('desc');
     const [searchInput, setSearchInput] = useState('');
@@ -135,7 +135,8 @@ export default function ReadingPage() {
             height: 'calc(100vh - 281px)',
             display: 'flex',
             flexDirection: 'column',
-            px: { xs: 1, sm: 2 }
+            px: { xs: 1, sm: 2 },
+            overflowY: 'auto'
         }}>
             <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ mb: { xs: 1, sm: 2 } }}>
                 Reading Tests
@@ -176,7 +177,7 @@ export default function ReadingPage() {
             </Stack>
 
             <Box sx={{ flex: 1, overflow: 'hidden' }}>
-                <ReadingTests tests={data.data.slice(0, 9)} />
+                <ReadingTests tests={data.data} />
             </Box>
 
             {data.pagination && (

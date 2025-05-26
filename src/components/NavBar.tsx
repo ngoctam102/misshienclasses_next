@@ -111,7 +111,7 @@ export default function Navbar() {
     }
 
     return (
-        <nav className="bg-white shadow-lg sticky top-0 z-50">
+        <nav className="bg-white shadow-lg z-50">
             <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
                 <div className="flex justify-between h-14 lg:h-16">
                     <div className="flex items-center">

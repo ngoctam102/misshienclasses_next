@@ -2,6 +2,144 @@
 import React, { useState, useEffect } from 'react';
 import { Test, Passage, QuestionGroup, Question, TestType, TestLevel, QuestionType, ContentType } from '@/types/test';
 import Image from 'next/image';
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import TextAlign from '@tiptap/extension-text-align';
+import Link from '@tiptap/extension-link';
+import ImageExtension from '@tiptap/extension-image';
+import Underline from '@tiptap/extension-underline';
+import Highlight from '@tiptap/extension-highlight';
+import Color from '@tiptap/extension-color';
+
+// Component RichTextEditor
+const RichTextEditor = ({ content, onChange }: { content: string, onChange: (value: string) => void }) => {
+    const editor = useEditor({
+        extensions: [
+            StarterKit.configure({
+                bulletList: {
+                    keepMarks: true,
+                    keepAttributes: false,
+                },
+                orderedList: {
+                    keepMarks: true,
+                    keepAttributes: false,
+                },
+            }),
+            TextAlign.configure({
+                types: ['heading', 'paragraph'],
+            }),
+            Link.configure({
+                openOnClick: false,
+            }),
+            ImageExtension,
+            Underline,
+            Highlight,
+            Color,
+        ],
+        content: content,
+        onUpdate: ({ editor }) => {
+            onChange(editor.getHTML());
+        },
+    });
+
+    if (!editor) {
+        return null;
+    }
+
+    return (
+        <div className="border rounded-lg">
+            <div className="border-b p-2 flex gap-2 flex-wrap">
+                <button
+                    onClick={() => editor.chain().focus().toggleBold().run()}
+                    className={`p-2 rounded ${editor.isActive('bold') ? 'bg-gray-200' : ''}`}
+                    title="In đậm (Ctrl + B)"
+                >
+                    <strong>B</strong>
+                </button>
+                <button
+                    onClick={() => editor.chain().focus().toggleItalic().run()}
+                    className={`p-2 rounded ${editor.isActive('italic') ? 'bg-gray-200' : ''}`}
+                    title="In nghiêng (Ctrl + I)"
+                >
+                    <em>I</em>
+                </button>
+                <button
+                    onClick={() => editor.chain().focus().toggleUnderline().run()}
+                    className={`p-2 rounded ${editor.isActive('underline') ? 'bg-gray-200' : ''}`}
+                    title="Gạch chân (Ctrl + U)"
+                >
+                    <u>U</u>
+                </button>
+                <button
+                    onClick={() => editor.chain().focus().toggleStrike().run()}
+                    className={`p-2 rounded ${editor.isActive('strike') ? 'bg-gray-200' : ''}`}
+                    title="Gạch ngang"
+                >
+                    <s>S</s>
+                </button>
+                <button
+                    onClick={() => editor.chain().focus().setTextAlign('left').run()}
+                    className={`p-2 rounded ${editor.isActive({ textAlign: 'left' }) ? 'bg-gray-200' : ''}`}
+                    title="Căn trái"
+                >
+                    ←
+                </button>
+                <button
+                    onClick={() => editor.chain().focus().setTextAlign('center').run()}
+                    className={`p-2 rounded ${editor.isActive({ textAlign: 'center' }) ? 'bg-gray-200' : ''}`}
+                    title="Căn giữa"
+                >
+                    ↔
+                </button>
+                <button
+                    onClick={() => editor.chain().focus().setTextAlign('right').run()}
+                    className={`p-2 rounded ${editor.isActive({ textAlign: 'right' }) ? 'bg-gray-200' : ''}`}
+                    title="Căn phải"
+                >
+                    →
+                </button>
+                <button
+                    onClick={() => editor.chain().focus().toggleBulletList().run()}
+                    className={`p-2 rounded ${editor.isActive('bulletList') ? 'bg-gray-200' : ''}`}
+                    title="Danh sách không đánh số (Ctrl + Shift + 8)"
+                >
+                    •
+                </button>
+                <button
+                    onClick={() => editor.chain().focus().toggleOrderedList().run()}
+                    className={`p-2 rounded ${editor.isActive('orderedList') ? 'bg-gray-200' : ''}`}
+                    title="Danh sách đánh số (Ctrl + Shift + 7)"
+                >
+                    1.
+                </button>
+                <button
+                    onClick={() => {
+                        const url = window.prompt('Nhập URL:');
+                        if (url) {
+                            editor.chain().focus().setLink({ href: url }).run();
+                        }
+                    }}
+                    className={`p-2 rounded ${editor.isActive('link') ? 'bg-gray-200' : ''}`}
+                    title="Thêm liên kết (Ctrl + K)"
+                >
+                    🔗
+                </button>
+            </div>
+            <EditorContent editor={editor} className="p-4 min-h-[200px] prose max-w-none" />
+            <div className="border-t p-2 text-sm text-gray-500">
+                <p>Hướng dẫn sử dụng danh sách:</p>
+                <ul className="list-disc pl-5 mt-1">
+                    <li>Nhấn nút &quot;•&quot; để tạo danh sách không đánh số</li>
+                    <li>Nhấn nút &quot;1.&quot; để tạo danh sách có đánh số</li>
+                    <li>Nhấn Enter để tạo mục mới</li>
+                    <li>Nhấn Tab để thụt lề mục hiện tại</li>
+                    <li>Nhấn Shift + Tab để giảm thụt lề</li>
+                    <li>Nhấn Enter 2 lần để thoát khỏi danh sách</li>
+                </ul>
+            </div>
+        </div>
+    );
+};
 
 export default function CreateTest() {
     const [test, setTest] = useState<Test>({
@@ -571,6 +709,19 @@ export default function CreateTest() {
                             )}
                         </div>
                     )}
+
+                    {test.type === 'listening' && (
+                        <div>
+                            <label className="block mb-2 font-semibold">Transcript (Không bắt buộc)</label>
+                            <textarea
+                                value={currentPassage.transcript || ''}
+                                onChange={(e) => setCurrentPassage(prev => ({ ...prev, transcript: e.target.value }))}
+                                className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                rows={4}
+                                placeholder="Nhập transcript cho bài nghe (không bắt buộc)"
+                            />
+                        </div>
+                    )}
                 </div>
 
                 {/* Passage Content */}
@@ -599,17 +750,15 @@ export default function CreateTest() {
                         </div>
 
                         {currentPassage.content?.type === 'text' && (
-                            <textarea
-                                value={currentPassage.content?.value || ''}
-                                onChange={(e) => setCurrentPassage(prev => ({
+                            <RichTextEditor
+                                content={currentPassage.content?.value || ''}
+                                onChange={(value) => setCurrentPassage(prev => ({
                                     ...prev,
                                     content: {
                                         type: prev.content?.type || 'text',
-                                        value: e.target.value
+                                        value: value
                                     }
                                 }))}
-                                className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                rows={10}
                             />
                         )}
 
@@ -790,18 +939,15 @@ export default function CreateTest() {
                                     </div>
 
                                     {currentGroup.content?.type === 'text' && (
-                                        <textarea
-                                            value={currentGroup.content?.value || ''}
-                                            onChange={(e) => setCurrentGroup(prev => ({
+                                        <RichTextEditor
+                                            content={currentGroup.content?.value || ''}
+                                            onChange={(value) => setCurrentGroup(prev => ({
                                                 ...prev,
                                                 content: {
                                                     type: prev.content?.type || 'text',
-                                                    value: e.target.value
+                                                    value: value
                                                 }
                                             }))}
-                                            className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                                            rows={5}
-                                            placeholder="Nhập nội dung cho nhóm câu hỏi"
                                         />
                                     )}
 

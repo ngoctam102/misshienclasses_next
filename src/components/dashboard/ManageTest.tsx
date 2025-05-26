@@ -23,7 +23,8 @@ import {
     FormControl,
     InputLabel,
     Divider,
-    Checkbox
+    Checkbox,
+    Pagination
 } from "@mui/material";
 import {
     Edit as EditIcon,
@@ -31,10 +32,27 @@ import {
     Visibility as VisibilityIcon
 } from "@mui/icons-material";
 import { Test as BaseTest, TestType, TestLevel, Passage, QuestionGroup, Question, QuestionType, ContentType } from "@/types/test";
+import { useDebounce } from "@/hooks/useDebounce";
+import { SelectChangeEvent } from "@mui/material";
 
 // Mở rộng interface Test để thêm _id
 interface Test extends BaseTest {
     _id: string;
+}
+
+interface PaginationData {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+}
+
+interface ApiResponse {
+    success: boolean;
+    data: Test[];
+    pagination: PaginationData;
 }
 
 interface ApiError extends Error {
@@ -62,31 +80,46 @@ const fetcher = async (url: string) => {
     
     const response = await res.json();
     console.log('API Response:', response);
-    console.log('Response type:', typeof response);
-    console.log('Data type:', typeof response.data);
-    console.log('Is Array?', Array.isArray(response.data));
-    console.log('Array length:', Array.isArray(response.data) ? response.data.length : 0);
-    
-    if (Array.isArray(response.data)) {
-        console.log('First item:', response.data[0]);
-        console.log('First item keys:', Object.keys(response.data[0]));
-    }
-    
-    return Array.isArray(response.data) ? response.data : [];
+    return response;
 };
 
 export default function ManageTest() {
     const [selectedTest, setSelectedTest] = useState<Test | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [openDialog, setOpenDialog] = useState(false);
+    const [page, setPage] = useState(1);
+    const [limit] = useState(10);
+    const [sort, setSort] = useState('createdAt');
+    const [order, setOrder] = useState('desc');
+    const [searchInput, setSearchInput] = useState('');
+    const debouncedSearch = useDebounce(searchInput, 500);
 
-    const { data: tests = [], error, isLoading, mutate } = useSWR<Test[]>(
-        process.env.NEXT_PUBLIC_ALL_TESTS_API_URL,
+    const { data, error, isLoading, mutate } = useSWR<ApiResponse>(
+        `${process.env.NEXT_PUBLIC_ALL_TESTS_API_URL}?page=${page}&limit=${limit}&sort=${sort}&order=${order}&search=${debouncedSearch}`,
         fetcher
     );
 
-    console.log('Current tests state:', tests);
-    console.log('Tests length:', tests.length);
+    const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
+        setPage(value);
+    };
+
+    const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchInput(event.target.value);
+        setPage(1);
+    };
+
+    const handleSortChange = (event: SelectChangeEvent) => {
+        setSort(event.target.value);
+        setPage(1);
+    };
+
+    const handleOrderChange = (event: SelectChangeEvent) => {
+        setOrder(event.target.value);
+        setPage(1);
+    };
+
+    console.log('Current tests state:', data);
+    console.log('Tests length:', data?.data.length);
     console.log('Is loading:', isLoading);
     console.log('Has error:', !!error);
 
@@ -675,16 +708,15 @@ export default function ManageTest() {
                                         />
                                     </div>
 
-                                    <div className="mb-4">
-                                        <label className="block text-sm font-medium text-gray-700">Transcript (Optional)</label>
-                                        <textarea
-                                            name={`passages[${passageIndex}].transcript`}
-                                            defaultValue={passage.transcript}
-                                            rows={4}
-                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm"
-                                            placeholder="Nhập transcript cho bài nghe (không bắt buộc)"
-                                        />
-                                    </div>
+                                    <TextField
+                                        fullWidth
+                                        label="Transcript"
+                                        name={`passages[${passageIndex}].transcript`}
+                                        defaultValue={passage.transcript}
+                                        multiline
+                                        rows={4}
+                                        placeholder="Nhập transcript cho bài nghe"
+                                    />
 
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <Typography variant="subtitle2">Question Groups</Typography>
@@ -1151,6 +1183,43 @@ export default function ManageTest() {
                 Quản lý bài test
             </Typography>
 
+            <Stack spacing={2} sx={{ mb: 3 }}>
+                <Box display="flex" gap={{ xs: 1, sm: 2 }} alignItems="center" flexDirection={{ xs: 'column', sm: 'row' }}>
+                    <TextField
+                        label="Tìm kiếm"
+                        variant="outlined"
+                        value={searchInput}
+                        onChange={handleSearchChange}
+                        fullWidth
+                        size="small"
+                    />
+                    <FormControl sx={{ minWidth: 120 }} size="small">
+                        <InputLabel>Sắp xếp theo</InputLabel>
+                        <Select
+                            value={sort}
+                            label="Sắp xếp theo"
+                            onChange={handleSortChange}
+                        >
+                            <MenuItem value="createdAt">Ngày tạo</MenuItem>
+                            <MenuItem value="title">Tiêu đề</MenuItem>
+                            <MenuItem value="type">Loại test</MenuItem>
+                            <MenuItem value="level">Cấp độ</MenuItem>
+                        </Select>
+                    </FormControl>
+                    <FormControl sx={{ minWidth: 120 }} size="small">
+                        <InputLabel>Thứ tự</InputLabel>
+                        <Select
+                            value={order}
+                            label="Thứ tự"
+                            onChange={handleOrderChange}
+                        >
+                            <MenuItem value="desc">Mới nhất</MenuItem>
+                            <MenuItem value="asc">Cũ nhất</MenuItem>
+                        </Select>
+                    </FormControl>
+                </Box>
+            </Stack>
+
             {error && (
                 <Alert severity="error" sx={{ mb: 2 }}>
                     {error.message || 'Có lỗi xảy ra khi tải danh sách test'}
@@ -1163,15 +1232,15 @@ export default function ManageTest() {
                 </Box>
             )}
 
-            {!isLoading && tests.length === 0 && !error && (
+            {!isLoading && data?.data.length === 0 && !error && (
                 <Alert severity="info" sx={{ mb: 2 }}>
                     Chưa có bài test nào
                 </Alert>
             )}
 
             <Stack spacing={2}>
-                {tests && tests.length > 0 ? (
-                    tests.map((test) => {
+                {data && data.data.length > 0 ? (
+                    data.data.map((test) => {
                         console.log('Rendering test:', test);
                         return (
                             <Card key={test._id}>
@@ -1244,6 +1313,18 @@ export default function ManageTest() {
                     })
                 ) : null}
             </Stack>
+
+            {data?.pagination && (
+                <Box display="flex" justifyContent="center" mt={3}>
+                    <Pagination 
+                        count={data.pagination.totalPages} 
+                        page={page} 
+                        onChange={handlePageChange}
+                        color="primary"
+                        size="medium"
+                    />
+                </Box>
+            )}
 
             <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
                 <DialogTitle>
