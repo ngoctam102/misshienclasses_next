@@ -237,10 +237,12 @@ export default function HandleListeningTest({ test_slug }: { test_slug: string})
                                 <h2 className="font-bold text-2xl mt-4">{selectedPassage.title}</h2>
                                 <div className="mt-2 text-justify leading-loose text-md lg:text-xl">
                                     {selectedPassage.audio_url && (
-                                        <audio key={selectedPassage.passage_number} controls className="w-full mb-4">
-                                            <source src={selectedPassage.audio_url} type="audio/mpeg" />
-                                            Trình duyệt của bạn không hỗ trợ phát audio.
-                                        </audio>
+                                        <div key={`audio-${selectedPassage.passage_number}`}>
+                                            <audio controls className="w-full mb-4">
+                                                <source src={selectedPassage.audio_url} type="audio/mpeg" />
+                                                Trình duyệt của bạn không hỗ trợ phát audio.
+                                            </audio>
+                                        </div>
                                     )}
                                     {selectedPassage.content && selectedPassage.content.type === 'image' && selectedPassage.content.value ? (
                                         <Image 
