@@ -16,12 +16,17 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
     const [countDown, setCountDown] = useState<boolean>(false);
     const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
     const [result, setResult] = useState<Record<number, boolean> | null>(null);
+    const [isHighlighting, setIsHighlighting] = useState<boolean>(false);
+    const [highlightedPassages, setHighlightedPassages] = useState<Record<number, string>>({});
     const questionRef = useRef<(HTMLDivElement | null)[]>([]);
     const formRef = useRef<HTMLFormElement | null>(null);
     const [focusQuestion, setFocusQuestion] = useState<number | null>(null);
     const [countCorrectAnswer, setCountCorrectAnswer] = useState<number | null>(0);
     const [bandScore, setBandScore] = useState<number | null>(0);
     const [showScore, setShowScore] = useState<boolean>(false);
+    const passageContentRef = useRef<HTMLDivElement>(null);
+    const [originalContent, setOriginalContent] = useState<string>('');
+
     const handleAnswer = (questionNumber: number, value: string, isCheckbox = false) => {
         setAnswered(prev => {
             const newSet = new Set(prev);
@@ -99,7 +104,7 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
     }, [data]);
 
     useEffect(() => {
-        if (!countDown || remainingTime <= 0) return;
+        if (!countDown || remainingTime <= 0 || isSubmitted) return;
         const timer = setInterval(() => {
             setRemainingTime(prev => {
                 if (prev <= 1) {
@@ -110,16 +115,128 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
             })
         }, 1000)
         return () => clearInterval(timer);
-    }, [countDown, remainingTime]);
+    }, [countDown, remainingTime, isSubmitted]);
 
     useEffect(() => {
-        if (remainingTime === 0) {
+        if (remainingTime === 0 && !isSubmitted) {
             if (formRef.current) {
                 formRef.current.requestSubmit();
             }
         }
-    }, [remainingTime, formRef]);
+    }, [remainingTime, formRef, isSubmitted]);
         
+    useEffect(() => {
+        if (selectedPassage?.content?.value) {
+            setOriginalContent(selectedPassage.content.value);
+        }
+    }, [selectedPassage]);
+
+    const handleMouseUp = () => {
+        const selection = window.getSelection();
+        if (!selection || selection.toString().length === 0) return;
+
+        // Kiểm tra xem selection có nằm trong passage content không
+        const passageContent = passageContentRef.current;
+        if (!passageContent) return;
+
+        const range = selection.getRangeAt(0);
+        if (!passageContent.contains(range.commonAncestorContainer)) return;
+
+        setIsHighlighting(true);
+    };
+
+    const handleHighlight = () => {
+        if (!passageContentRef.current || !selectedPassage) return;
+
+        try {
+            const selection = window.getSelection();
+            if (!selection || selection.rangeCount === 0) return;
+
+            const range = selection.getRangeAt(0);
+            const container = passageContentRef.current;
+
+            if (!container.contains(range.commonAncestorContainer)) return;
+
+            // Tạo highlight span
+            const highlightWrapper = document.createElement('span');
+            highlightWrapper.className = 'bg-yellow-300';
+            highlightWrapper.style.backgroundColor = '#fef08a';
+
+            // Tạo fragment từ nội dung đã chọn để giữ nguyên cấu trúc HTML
+            const fragment = range.createContextualFragment(range.toString());
+            highlightWrapper.appendChild(fragment);
+
+            // Xóa nội dung đã chọn và chèn highlight span
+            range.deleteContents();
+            range.insertNode(highlightWrapper);
+
+            // Xóa lựa chọn
+            selection.removeAllRanges();
+
+            // Cập nhật lại nội dung
+            setHighlightedPassages((prev) => ({
+                ...prev,
+                [selectedPassage.passage_number]: container.innerHTML,
+            }));
+
+            setIsHighlighting(false);
+        } catch (error) {
+            console.error('Lỗi khi highlight:', error);
+            setIsHighlighting(false);
+        }
+    };
+
+    const handleClearAllHighlights = () => {
+        if (!passageContentRef.current || !selectedPassage) return;
+
+        try {
+            const container = passageContentRef.current;
+            
+            // Tìm tất cả highlight spans và thay thế bằng text content
+            const highlightedSpans = container.querySelectorAll('.bg-yellow-300');
+            
+            highlightedSpans.forEach(span => {
+                const parent = span.parentNode;
+                if (parent) {
+                    // Tạo text node từ nội dung của span
+                    const textNode = document.createTextNode(span.textContent || '');
+                    parent.replaceChild(textNode, span);
+                }
+            });
+
+            // Merge các text nodes liền kề
+            container.normalize();
+
+            // Xóa khỏi state
+            setHighlightedPassages(prev => {
+                const newPassages = { ...prev };
+                delete newPassages[selectedPassage.passage_number];
+                return newPassages;
+            });
+
+        } catch (error) {
+            console.error('Error clearing highlights:', error);
+            // Fallback: reset về original content
+            passageContentRef.current.innerHTML = originalContent;
+            setHighlightedPassages(prev => {
+                const newPassages = { ...prev };
+                delete newPassages[selectedPassage.passage_number];
+                return newPassages;
+            });
+        }
+    };
+
+    useEffect(() => {
+        if (selectedPassage && passageContentRef.current) {
+            const passageNumber = selectedPassage.passage_number;
+            if (highlightedPassages[passageNumber]) {
+                passageContentRef.current.innerHTML = highlightedPassages[passageNumber];
+            } else {
+                passageContentRef.current.innerHTML = originalContent;
+            }
+        }
+    }, [selectedPassage, highlightedPassages, originalContent]);
+
     if (isLoading) return <Spinner />
     if (error) return <div>Error: {error.message}</div>
     if (!data) return <div>No data found for the test slug: {test_slug}</div>
@@ -167,38 +284,21 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        if (Object.keys(studentAnswers).length < 40 && remainingTime > 0) {
-            toast.warning('Bạn cần điền đủ các câu trả lời trước khi bấm nút nộp bài 😉😉😉😉');
-        } else if (Object.keys(studentAnswers).length < 40 && remainingTime === 0) {
+        setIsSubmitted(true);
+        setCountDown(false);
+        if (remainingTime === 0) {
             toast.warning('Thời gian làm bài đã hết. Bài làm sẽ được nộp tự động!~😎~😎~!');
-            const result = checkAnswers();
-            // Lưu kết quả vào state
-            setResult(result);
-            // Set isSubmitted là true
-            setIsSubmitted(true);
-            // Đếm xem có bao nhiêu câu đúng
-            const countAnswers = Object.values(result).filter(value => value === true).length;
-            setCountCorrectAnswer(countAnswers);
-            // Tính điểm band score
-            setBandScore(checkBandScore(countAnswers));
-            // Send result to handle score component
-            setShowScore(true);
         } else {
             toast.success("Nộp bài thành công!!~😍~😍~😍~!!");
-            const result = checkAnswers();
-            // Lưu kết quả vào state
-            setResult(result);
-            // Set isSubmitted là true
-            setIsSubmitted(true);
-            // Đếm xem có bao nhiêu câu đúng
-            const countAnswers = Object.values(result).filter(value => value === true).length;
-            setCountCorrectAnswer(countAnswers);
-            // Tính điểm band score
-            setBandScore(checkBandScore(countAnswers));
-            // Send result to handle score component
-            setShowScore(true);
         }
+        const result = checkAnswers();
+        setResult(result);
+        const countAnswers = Object.values(result).filter(value => value === true).length;
+        setCountCorrectAnswer(countAnswers);
+        setBandScore(checkBandScore(countAnswers));
+        setShowScore(true);
     }
+
     return (
         <form className="w-full" onSubmit={handleSubmit} ref={formRef}>
             <h1 className='mt-2 text-2xl font-bold text-center'>{title} / <span className="text-md text-orange-500">{level}</span></h1>
@@ -227,8 +327,34 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                     <div className="w-[95vw] mx-auto bg-white flex flex-col lg:flex-row h-full p-2 lg:p-5 shadow-lg rounded-2xl overflow-auto">
                         <div className="flex flex-col lg:flex-row w-full lg:w-10/12 rounded-lg">
                             <div className="w-full lg:w-[60%] px-2 lg:px-4 overflow-y-auto">
-                                <h2 className="font-bold text-2xl mt-4">{selectedPassage.title}</h2>
-                                <div className="mt-2 text-justify leading-loose text-md lg:text-xl">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h2 className="font-bold text-2xl">{selectedPassage.title}</h2>
+                                    <div className="flex gap-3 items-center">
+                                        {isHighlighting && (
+                                            <button
+                                                type="button"
+                                                onClick={handleHighlight}
+                                                className="bg-yellow-300 px-4 py-2 rounded hover:bg-yellow-400 transition-colors flex items-center gap-2"
+                                            >
+                                                <span>Highlight</span>
+                                            </button>
+                                        )}
+                                        {highlightedPassages[selectedPassage.passage_number] && (
+                                            <button
+                                                type="button"
+                                                onClick={handleClearAllHighlights}
+                                                className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors flex items-center gap-2"
+                                            >
+                                                <span>Clear All Highlights</span>
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                                <div 
+                                    ref={passageContentRef}
+                                    className="mt-2 text-justify leading-loose text-md lg:text-xl"
+                                    onMouseUp={handleMouseUp}
+                                >
                                     {selectedPassage.content && selectedPassage.content.type === 'image' && selectedPassage.content.value ? (
                                         <Image 
                                             key={selectedPassage.passage_number}
@@ -238,16 +364,6 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                                             height={500}
                                             className="max-w-full h-auto rounded-lg shadow-md"
                                         />
-                                    ) : selectedPassage.content?.type === 'text' && selectedPassage.content?.value ? (
-                                        <div 
-                                            className="text-justify prose prose-sm lg:prose-base max-w-none [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-2 [&_li]:mb-2 [&_p]:mb-2"
-                                            dangerouslySetInnerHTML={{ __html: selectedPassage.content.value }}
-                                        />
-                                    ) : selectedPassage.content?.type === 'html' && selectedPassage.content?.value ? (
-                                        <div 
-                                            className="text-justify prose prose-sm lg:prose-base max-w-none [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-2 [&_li]:mb-2 [&_p]:mb-2"
-                                            dangerouslySetInnerHTML={{ __html: selectedPassage.content.value }}
-                                        />
                                     ) : null}
                                 </div>
                             </div>
@@ -256,7 +372,7 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                                     {selectedPassage.question_groups.map((group) => (
                                         <div key={group.group_title} className="leading-normal lg:leading-loose text-md lg:text-xl">
                                             <h3 className="font-bold text-left">{group.group_title}</h3>
-                                            <p>{group.group_instruction}</p>
+                                            <p className="text-justify font-semibold">{group.group_instruction}</p>
                                             {/* Thêm phần hiển thị content của group */}
                                             {group.content && (
                                                 <div className="mt-4 mb-4">
@@ -298,7 +414,10 @@ export default function HandleReadingTest({ test_slug }: { test_slug: string}) {
                                                     className={`${focusQuestion === question.question_number ? 'border-2 border-orange-500 p-3 rounded-lg' : ''} ${isSubmitted ? (isCorrect ? 'bg-green-100' : 'bg-red-100') : ''}`}
                                                     ref={el => {questionRef.current[question.question_number] = el}}>
                                                         <div className="flex items-center gap-3">
-                                                            {question.question_number}. {question.question_text}
+                                                            <span className="question-number bg-orange-500 text-white font-bold px-3 py-1 rounded-full text-sm hover:scale-110 transition-transform duration-300 cursor-pointer">
+                                                                {question.question_number}
+                                                            </span>
+                                                            <span>{question.question_text}</span>
                                                             {isSubmitted && (
                                                                 <>
                                                                     <span className={`${isCorrect ? '' : 'text-red-500'}`}>{isCorrect ? '✅' : '✘'}</span>

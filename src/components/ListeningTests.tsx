@@ -86,7 +86,7 @@ export default function ListeningTests({ tests }: { tests: TestListItem[] }) {
                                     />
                                     <Chip 
                                         icon={<AccessTimeIcon />} 
-                                        label={`${test.duration} phút`} 
+                                        label={`${test.duration} minutes`} 
                                         color="secondary" 
                                         size="small"
                                         sx={{ transition: 'all 300ms ease-in-out' }}

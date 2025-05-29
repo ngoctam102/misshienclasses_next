@@ -31,7 +31,7 @@ import {
     Delete as DeleteIcon,
     Visibility as VisibilityIcon
 } from "@mui/icons-material";
-import { Test as BaseTest, TestType, TestLevel, Passage, QuestionGroup, Question, QuestionType } from "@/types/test";
+import { Test as BaseTest, TestType, TestLevel, Passage, QuestionGroup, Question, ContentType } from "@/types/test";
 import { useDebounce } from "@/hooks/useDebounce";
 import { SelectChangeEvent } from "@mui/material";
 import TiptapEditor from '../editor/TiptapEditor';
@@ -61,6 +61,15 @@ interface ApiError extends Error {
     status?: number;
 }
 
+interface FormData extends Omit<Test, '_id'> {
+    passages: Array<Omit<Passage, 'content'> & {
+        content?: {
+            type: 'text' | 'image' | 'html';
+            value?: string;
+        };
+    }>;
+}
+
 // Fetcher function
 const fetcher = async (url: string) => {
     console.log('Fetching from URL:', url);
@@ -86,6 +95,7 @@ const fetcher = async (url: string) => {
 
 export default function ManageTest() {
     const [selectedTest, setSelectedTest] = useState<Test | null>(null);
+    const [formData, setFormData] = useState<FormData | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [openDialog, setOpenDialog] = useState(false);
     const [page, setPage] = useState(1);
@@ -206,163 +216,211 @@ export default function ManageTest() {
         }
     };
 
+    const handleOpenEdit = (test: Test) => {
+        setSelectedTest(test);
+        setFormData({
+            test_slug: test.test_slug,
+            type: test.type,
+            level: test.level,
+            title: test.title,
+            duration: test.duration,
+            passages: test.passages.map(passage => ({
+                ...passage,
+                content: passage.content ? {
+                    type: passage.content.type,
+                    value: passage.content.value || ''
+                } : undefined,
+                question_groups: passage.question_groups.map(group => ({
+                    ...group,
+                    content: group.content ? {
+                        type: group.content.type,
+                        value: group.content.value || ''
+                    } : undefined,
+                    questions: group.questions.map(question => ({
+                        ...question,
+                        answer: [...(question.answer || [])],
+                        options: [...(question.options || [])]
+                    }))
+                }))
+            }))
+        });
+        setIsEditing(true);
+        setOpenDialog(true);
+    };
+
+    const handleInputChange = (field: keyof FormData, value: FormData[keyof FormData]) => {
+        setFormData(prev => {
+            if (!prev) return null;
+            return {
+                ...prev,
+                [field]: value
+            };
+        });
+    };
+
+    const handlePassageChange = (passageIndex: number, field: keyof Passage, value: Passage[keyof Passage]) => {
+        setFormData(prev => {
+            if (!prev) return null;
+            const newPassages = [...prev.passages];
+            newPassages[passageIndex] = {
+                ...newPassages[passageIndex],
+                [field]: value
+            };
+            return {
+                ...prev,
+                passages: newPassages
+            };
+        });
+    };
+
+    const handleQuestionGroupChange = (passageIndex: number, groupIndex: number, field: keyof QuestionGroup, value: QuestionGroup[keyof QuestionGroup]) => {
+        setFormData(prev => {
+            if (!prev) return null;
+            const newPassages = [...prev.passages];
+            newPassages[passageIndex].question_groups[groupIndex] = {
+                ...newPassages[passageIndex].question_groups[groupIndex],
+                [field]: value
+            };
+            return {
+                ...prev,
+                passages: newPassages
+            };
+        });
+    };
+
+    const handleQuestionChange = (passageIndex: number, groupIndex: number, questionIndex: number, field: keyof Question, value: Question[keyof Question]) => {
+        setFormData(prev => {
+            if (!prev) return null;
+            const newPassages = [...prev.passages];
+            newPassages[passageIndex].question_groups[groupIndex].questions[questionIndex] = {
+                ...newPassages[passageIndex].question_groups[groupIndex].questions[questionIndex],
+                [field]: value
+            };
+            return {
+                ...prev,
+                passages: newPassages
+            };
+        });
+    };
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        if (!selectedTest || !formData) return;
+
+        try {
+            await updateTest(selectedTest._id, formData);
+            setOpenDialog(false);
+            setIsEditing(false);
+            setFormData(null);
+        } catch (error) {
+            console.error('Lỗi khi cập nhật test:', error);
+        }
+    };
+
     const handleCloseDialog = () => {
         setOpenDialog(false);
         setSelectedTest(null);
+        setFormData(null);
         setIsEditing(false);
     };
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        if (!selectedTest) return;
+    const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>, passageIndex: number) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
 
-        // Tạo một bản sao của test hiện tại
-        const updatedData: Partial<Test> = {
-            ...selectedTest,
-            test_slug: (document.getElementById('test_slug') as HTMLInputElement).value,
-            type: (document.getElementById('type') as HTMLSelectElement).value as TestType,
-            level: (document.getElementById('level') as HTMLSelectElement).value as TestLevel,
-            title: (document.getElementById('title') as HTMLInputElement).value,
-            duration: Number((document.getElementById('duration') as HTMLInputElement).value),
-            passages: selectedTest.passages.map((passage, passageIndex) => {
-                const updatedPassage: Passage = {
-                    ...passage,
-                    passage_number: passage.passage_number,
-                    title: (document.getElementById(`passages[${passageIndex}].title`) as HTMLInputElement).value || passage.title,
-                    content: passage.content ? {
-                        ...passage.content,
-                        value: passage.content.value
-                    } : undefined,
-                    audio_url: (document.getElementById(`passages[${passageIndex}].audio_url`) as HTMLInputElement).value || passage.audio_url,
-                    transcript: (document.getElementById(`passages[${passageIndex}].transcript`) as HTMLInputElement).value || passage.transcript,
-                    question_groups: passage.question_groups.map((group, groupIndex) => {
-                        const updatedGroup: QuestionGroup = {
-                            ...group,
-                            group_title: (document.getElementById(`passages[${passageIndex}].question_groups[${groupIndex}].group_title`) as HTMLInputElement).value || group.group_title,
-                            group_instruction: (document.getElementById(`passages[${passageIndex}].question_groups[${groupIndex}].group_instruction`) as HTMLInputElement).value || group.group_instruction,
-                            content: group.content ? {
-                                ...group.content,
-                                value: group.content.value
-                            } : undefined,
-                            given_words: group.given_words || [],
-                            questions: group.questions.map((question, questionIndex) => ({
-                                ...question,
-                                question_number: Number((document.getElementById(`passages[${passageIndex}].question_groups[${groupIndex}].questions[${questionIndex}].question_number`) as HTMLInputElement).value) || question.question_number,
-                                question_type: (document.getElementById(`passages[${passageIndex}].question_groups[${groupIndex}].questions[${questionIndex}].question_type`) as HTMLSelectElement).value as QuestionType || question.question_type,
-                                question_text: (document.getElementById(`passages[${passageIndex}].question_groups[${groupIndex}].questions[${questionIndex}].question_text`) as HTMLInputElement).value || question.question_text,
-                                answer: question.answer || [],
-                                explaination: (document.getElementById(`passages[${passageIndex}].question_groups[${groupIndex}].questions[${questionIndex}].explaination`) as HTMLInputElement).value || question.explaination || '',
-                                options: question.options || []
-                            }))
+        try {
+            const formData = new FormData();
+            formData.append('audio', file);
+
+            const res = await fetch(`${process.env.NEXT_PUBLIC_UPLOAD_AUDIO_FILE_API_URL}`, {
+                method: 'POST',
+                body: formData,
+                credentials: 'include'
+            });
+
+            if (!res.ok) {
+                throw new Error('Upload failed');
+            }
+
+            const data = await res.json();
+            if (data.success) {
+                setFormData(prev => {
+                    if (!prev) return null;
+                    const newPassages = [...prev.passages];
+                    newPassages[passageIndex] = {
+                        ...newPassages[passageIndex],
+                        audio_url: data.url
+                    };
+                    return {
+                        ...prev,
+                        passages: newPassages
+                    };
+                });
+            } else {
+                throw new Error('Upload failed');
+            }
+        } catch (error) {
+            console.error('Upload error:', error);
+            alert('Lỗi khi upload audio');
+        }
+    };
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'passage' | 'group', passageIndex: number, groupIndex?: number) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        try {
+            const formData = new FormData();
+            formData.append('image', file);
+
+            const res = await fetch(`${process.env.NEXT_PUBLIC_UPLOAD_IMAGE_FILE_API_URL}`, {
+                method: 'POST',
+                body: formData,
+                credentials: 'include'
+            });
+
+            if (!res.ok) {
+                throw new Error('Upload failed');
+            }
+
+            const data = await res.json();
+            if (data.success) {
+                setFormData(prev => {
+                    if (!prev) return null;
+                    const newPassages = [...prev.passages];
+                    if (type === 'passage') {
+                        newPassages[passageIndex] = {
+                            ...newPassages[passageIndex],
+                            content: {
+                                type: 'image',
+                                value: data.url
+                            }
                         };
-                        return updatedGroup;
-                    })
-                };
-                return updatedPassage;
-            })
-        };
-
-        console.log('Data to update:', updatedData);
-        updateTest(selectedTest._id, updatedData);
+                    } else if (type === 'group' && groupIndex !== undefined) {
+                        newPassages[passageIndex].question_groups[groupIndex] = {
+                            ...newPassages[passageIndex].question_groups[groupIndex],
+                            content: {
+                                type: 'image',
+                                value: data.url
+                            }
+                        };
+                    }
+                    return {
+                        ...prev,
+                        passages: newPassages
+                    };
+                });
+            } else {
+                throw new Error('Upload failed');
+            }
+        } catch (error) {
+            console.error('Upload error:', error);
+            alert('Lỗi khi upload ảnh');
+        }
     };
 
     const renderTestForm = (test: Test) => {
-        // Xử lý upload file audio
-        const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>, passageIndex: number) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
-
-            try {
-                const formData = new FormData();
-                formData.append('audio', file);
-
-                const res = await fetch(`${process.env.NEXT_PUBLIC_UPLOAD_AUDIO_FILE_API_URL}`, {
-                    method: 'POST',
-                    body: formData,
-                    credentials: 'include'
-                });
-
-                if (!res.ok) {
-                    throw new Error('Upload failed');
-                }
-
-                const data = await res.json();
-                if (data.success) {
-                    setSelectedTest(prev => {
-                        if (!prev) return null;
-                        const newPassages = [...prev.passages];
-                        newPassages[passageIndex] = {
-                            ...newPassages[passageIndex],
-                            audio_url: data.url
-                        };
-                        return {
-                            ...prev,
-                            passages: newPassages
-                        };
-                    });
-                } else {
-                    throw new Error('Upload failed');
-                }
-            } catch (error) {
-                console.error('Upload error:', error);
-                alert('Lỗi khi upload audio');
-            }
-        };
-
-        // Xử lý upload ảnh cho content
-        const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'passage' | 'group', passageIndex: number, groupIndex?: number) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
-
-            try {
-                const formData = new FormData();
-                formData.append('image', file);
-
-                const res = await fetch(`${process.env.NEXT_PUBLIC_UPLOAD_IMAGE_FILE_API_URL}`, {
-                    method: 'POST',
-                    body: formData,
-                    credentials: 'include'
-                });
-
-                if (!res.ok) {
-                    throw new Error('Upload failed');
-                }
-
-                const data = await res.json();
-                if (data.success) {
-                    setSelectedTest(prev => {
-                        if (!prev) return null;
-                        const newPassages = [...prev.passages];
-                        if (type === 'passage') {
-                            newPassages[passageIndex] = {
-                                ...newPassages[passageIndex],
-                                content: {
-                                    type: 'image',
-                                    value: data.url
-                                }
-                            };
-                        } else if (type === 'group' && groupIndex !== undefined) {
-                            newPassages[passageIndex].question_groups[groupIndex] = {
-                                ...newPassages[passageIndex].question_groups[groupIndex],
-                                content: {
-                                    type: 'image',
-                                    value: data.url
-                                }
-                            };
-                        }
-                        return {
-                            ...prev,
-                            passages: newPassages
-                        };
-                    });
-                } else {
-                    throw new Error('Upload failed');
-                }
-            } catch (error) {
-                console.error('Upload error:', error);
-                alert('Lỗi khi upload ảnh');
-            }
-        };
+        if (!formData) return null;
 
         return (
             <Box component="form" onSubmit={handleSubmit}>
@@ -373,7 +431,8 @@ export default function ManageTest() {
                             fullWidth
                             label="Test Slug"
                             name="test_slug"
-                            defaultValue={test.test_slug}
+                            value={formData.test_slug}
+                            onChange={(e) => handleInputChange('test_slug', e.target.value)}
                             required
                         />
                         <Stack direction="row" spacing={2}>
@@ -381,7 +440,8 @@ export default function ManageTest() {
                                 <InputLabel>Loại Test</InputLabel>
                                 <Select
                                     name="type"
-                                    defaultValue={test.type}
+                                    value={formData.type}
+                                    onChange={(e) => handleInputChange('type', e.target.value as TestType)}
                                     label="Loại Test"
                                     required
                                 >
@@ -393,7 +453,8 @@ export default function ManageTest() {
                                 <InputLabel>Cấp độ</InputLabel>
                                 <Select
                                     name="level"
-                                    defaultValue={test.level}
+                                    value={formData.level}
+                                    onChange={(e) => handleInputChange('level', e.target.value as TestLevel)}
                                     label="Cấp độ"
                                     required
                                 >
@@ -406,7 +467,8 @@ export default function ManageTest() {
                             fullWidth
                             label="Tiêu đề"
                             name="title"
-                            defaultValue={test.title}
+                            value={formData.title}
+                            onChange={(e) => handleInputChange('title', e.target.value)}
                             required
                         />
                         <TextField
@@ -414,7 +476,8 @@ export default function ManageTest() {
                             label="Thời gian (phút)"
                             name="duration"
                             type="number"
-                            defaultValue={test.duration}
+                            value={formData.duration}
+                            onChange={(e) => handleInputChange('duration', Number(e.target.value))}
                             required
                         />
                     </Stack>
@@ -427,8 +490,13 @@ export default function ManageTest() {
                             variant="contained" 
                             color="primary"
                             onClick={() => {
-                                const newPassage: Passage = {
-                                    passage_number: test.passages.length + 1,
+                                const newPassage: Omit<Passage, 'content'> & {
+                                    content?: {
+                                        type: 'text' | 'image' | 'html';
+                                        value?: string;
+                                    };
+                                } = {
+                                    passage_number: formData.passages.length + 1,
                                     title: '',
                                     content: {
                                         type: 'text',
@@ -436,13 +504,10 @@ export default function ManageTest() {
                                     },
                                     question_groups: []
                                 };
-                                setSelectedTest(prev => {
-                                    if (!prev) return null;
-                                    return {
-                                        ...prev,
-                                        passages: [...prev.passages, newPassage]
-                                    };
-                                });
+                                setFormData(prev => ({
+                                    ...prev!,
+                                    passages: [...prev!.passages, newPassage]
+                                }));
                             }}
                         >
                             Thêm Passage
@@ -450,7 +515,7 @@ export default function ManageTest() {
                     </Box>
 
                     <Stack spacing={3}>
-                        {test.passages?.map((passage, passageIndex) => (
+                        {formData.passages.map((passage, passageIndex) => (
                             <Box key={passageIndex} sx={{ p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
                                 <Stack spacing={2}>
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -460,7 +525,7 @@ export default function ManageTest() {
                                         <Button 
                                             color="error"
                                             onClick={() => {
-                                                setSelectedTest(prev => ({
+                                                setFormData(prev => ({
                                                     ...prev!,
                                                     passages: prev!.passages.filter((_, index) => index !== passageIndex)
                                                 }));
@@ -474,14 +539,19 @@ export default function ManageTest() {
                                         fullWidth
                                         label="Tiêu đề Passage"
                                         name={`passages[${passageIndex}].title`}
-                                        defaultValue={passage.title}
+                                        value={passage.title}
+                                        onChange={(e) => handlePassageChange(passageIndex, 'title', e.target.value)}
                                     />
 
                                     <FormControl fullWidth>
                                         <InputLabel>Loại nội dung</InputLabel>
                                         <Select
                                             name={`passages[${passageIndex}].content_type`}
-                                            defaultValue={passage.content?.type || 'text'}
+                                            value={passage.content?.type || 'text'}
+                                            onChange={(e) => handlePassageChange(passageIndex, 'content', { 
+                                                type: e.target.value as 'text' | 'image' | 'html',
+                                                value: passage.content?.value || ''
+                                            })}
                                             label="Loại nội dung"
                                         >
                                             <MenuItem value="text">Text</MenuItem>
@@ -494,22 +564,9 @@ export default function ManageTest() {
                                         <TiptapEditor
                                             content={passage.content?.value || ''}
                                             onChange={(newContent) => {
-                                                setSelectedTest(prev => {
-                                                    if (!prev) return null;
-                                                    const newPassages = [...prev.passages];
-                                                    const currentPassage = newPassages[passageIndex];
-                                                    newPassages[passageIndex] = {
-                                                        ...currentPassage,
-                                                        content: {
-                                                            ...currentPassage.content,
-                                                            type: currentPassage.content?.type || 'text',
-                                                            value: newContent
-                                                        }
-                                                    };
-                                                    return {
-                                                        ...prev,
-                                                        passages: newPassages
-                                                    };
+                                                handlePassageChange(passageIndex, 'content', {
+                                                    type: 'text',
+                                                    value: newContent
                                                 });
                                             }}
                                         />
@@ -552,9 +609,10 @@ export default function ManageTest() {
                                             fullWidth
                                             label="HTML Content"
                                             name={`passages[${passageIndex}].content`}
-                                            defaultValue={passage.content?.value}
+                                            value={passage.content?.value}
                                             multiline
                                             rows={4}
+                                            onChange={(e) => handlePassageChange(passageIndex, 'content', { type: 'html', value: e.target.value })}
                                         />
                                     )}
 
@@ -589,7 +647,8 @@ export default function ManageTest() {
                                         <input
                                             type="text"
                                             name={`passages[${passageIndex}].audio_url`}
-                                            defaultValue={passage.audio_url}
+                                            value={passage.audio_url}
+                                            onChange={(e) => handlePassageChange(passageIndex, 'audio_url', e.target.value)}
                                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm"
                                         />
                                     </div>
@@ -598,9 +657,10 @@ export default function ManageTest() {
                                         fullWidth
                                         label="Transcript"
                                         name={`passages[${passageIndex}].transcript`}
-                                        defaultValue={passage.transcript}
+                                        value={passage.transcript}
                                         multiline
                                         rows={4}
+                                        onChange={(e) => handlePassageChange(passageIndex, 'transcript', e.target.value)}
                                         placeholder="Nhập transcript cho bài nghe"
                                     />
 
@@ -620,18 +680,14 @@ export default function ManageTest() {
                                                     given_words: [],
                                                     questions: []
                                                 };
-                                                setSelectedTest(prev => {
-                                                    if (!prev) return null;
-                                                    const updatedPassages = prev.passages.map((p, index) => 
+                                                setFormData(prev => ({
+                                                    ...prev!,
+                                                    passages: prev!.passages.map((p, index) => 
                                                         index === passageIndex 
                                                             ? { ...p, question_groups: [...p.question_groups, newGroup] }
                                                             : p
-                                                    );
-                                                    return {
-                                                        ...prev,
-                                                        passages: updatedPassages
-                                                    };
-                                                });
+                                                    )
+                                                }));
                                             }}
                                         >
                                             Thêm Nhóm Câu Hỏi
@@ -647,7 +703,7 @@ export default function ManageTest() {
                                                         <Button 
                                                             color="error"
                                                             onClick={() => {
-                                                                setSelectedTest(prev => ({
+                                                                setFormData(prev => ({
                                                                     ...prev!,
                                                                     passages: prev!.passages.map((p, index) => 
                                                                         index === passageIndex 
@@ -665,22 +721,28 @@ export default function ManageTest() {
                                                         fullWidth
                                                         label="Tiêu đề nhóm"
                                                         name={`passages[${passageIndex}].question_groups[${groupIndex}].group_title`}
-                                                        defaultValue={group.group_title}
+                                                        value={group.group_title}
+                                                        onChange={(e) => handleQuestionGroupChange(passageIndex, groupIndex, 'group_title', e.target.value)}
                                                     />
                                                     <TextField
                                                         fullWidth
                                                         label="Hướng dẫn"
                                                         name={`passages[${passageIndex}].question_groups[${groupIndex}].group_instruction`}
-                                                        defaultValue={group.group_instruction}
+                                                        value={group.group_instruction}
                                                         multiline
                                                         rows={2}
+                                                        onChange={(e) => handleQuestionGroupChange(passageIndex, groupIndex, 'group_instruction', e.target.value)}
                                                     />
 
                                                     <FormControl fullWidth>
                                                         <InputLabel>Loại nội dung</InputLabel>
                                                         <Select
                                                             name={`passages[${passageIndex}].question_groups[${groupIndex}].content_type`}
-                                                            defaultValue={group.content?.type || 'text'}
+                                                            value={group.content?.type || 'text'}
+                                                            onChange={(e) => handleQuestionGroupChange(passageIndex, groupIndex, 'content', { 
+                                                                type: e.target.value as ContentType, 
+                                                                value: group.content?.value || '' 
+                                                            })}
                                                             label="Loại nội dung"
                                                         >
                                                             <MenuItem value="text">Text</MenuItem>
@@ -693,22 +755,9 @@ export default function ManageTest() {
                                                         <TiptapEditor
                                                             content={group.content?.value || ''}
                                                             onChange={(newContent) => {
-                                                                setSelectedTest(prev => {
-                                                                    if (!prev) return null;
-                                                                    const newPassages = [...prev.passages];
-                                                                    const currentGroup = newPassages[passageIndex].question_groups[groupIndex];
-                                                                    newPassages[passageIndex].question_groups[groupIndex] = {
-                                                                        ...currentGroup,
-                                                                        content: {
-                                                                            ...currentGroup.content,
-                                                                            type: currentGroup.content?.type || 'text',
-                                                                            value: newContent
-                                                                        }
-                                                                    };
-                                                                    return {
-                                                                        ...prev,
-                                                                        passages: newPassages
-                                                                    };
+                                                                handleQuestionGroupChange(passageIndex, groupIndex, 'content', {
+                                                                    type: 'text',
+                                                                    value: newContent
                                                                 });
                                                             }}
                                                         />
@@ -751,9 +800,10 @@ export default function ManageTest() {
                                                             fullWidth
                                                             label="HTML Content"
                                                             name={`passages[${passageIndex}].question_groups[${groupIndex}].content`}
-                                                            defaultValue={group.content?.value}
+                                                            value={group.content?.value}
                                                             multiline
                                                             rows={2}
+                                                            onChange={(e) => handleQuestionGroupChange(passageIndex, groupIndex, 'content', { type: 'html', value: e.target.value })}
                                                         />
                                                     )}
 
@@ -761,9 +811,10 @@ export default function ManageTest() {
                                                         fullWidth
                                                         label="Từ cho sẵn (mỗi từ một dòng)"
                                                         name={`passages[${passageIndex}].question_groups[${groupIndex}].given_words`}
-                                                        defaultValue={group.given_words?.join('\n')}
+                                                        value={group.given_words?.join('\n')}
                                                         multiline
                                                         rows={2}
+                                                        onChange={(e) => handleQuestionGroupChange(passageIndex, groupIndex, 'given_words', e.target.value.split('\n'))}
                                                     />
 
                                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -780,9 +831,9 @@ export default function ManageTest() {
                                                                     explaination: '',
                                                                     options: []
                                                                 };
-                                                                setSelectedTest(prev => {
-                                                                    if (!prev) return null;
-                                                                    const updatedPassages = prev.passages.map((p, index) => 
+                                                                setFormData(prev => ({
+                                                                    ...prev!,
+                                                                    passages: prev!.passages.map((p, index) => 
                                                                         index === passageIndex 
                                                                             ? {
                                                                                 ...p,
@@ -793,12 +844,8 @@ export default function ManageTest() {
                                                                                 )
                                                                             }
                                                                             : p
-                                                                    );
-                                                                    return {
-                                                                        ...prev,
-                                                                        passages: updatedPassages
-                                                                    };
-                                                                });
+                                                                    )
+                                                                }));
                                                             }}
                                                         >
                                                             Thêm Câu Hỏi
@@ -814,7 +861,7 @@ export default function ManageTest() {
                                                                         <Button 
                                                                             color="error"
                                                                             onClick={() => {
-                                                                                setSelectedTest(prev => ({
+                                                                                setFormData(prev => ({
                                                                                     ...prev!,
                                                                                     passages: prev!.passages.map((p, index) => 
                                                                                         index === passageIndex 
@@ -840,13 +887,15 @@ export default function ManageTest() {
                                                                         label="Số thứ tự câu hỏi"
                                                                         name={`passages[${passageIndex}].question_groups[${groupIndex}].questions[${questionIndex}].question_number`}
                                                                         type="number"
-                                                                        defaultValue={question.question_number}
+                                                                        value={question.question_number}
+                                                                        onChange={(e) => handleQuestionChange(passageIndex, groupIndex, questionIndex, 'question_number', e.target.value)}
                                                                     />
                                                                     <FormControl fullWidth>
                                                                         <InputLabel>Loại câu hỏi</InputLabel>
                                                                         <Select
                                                                             name={`passages[${passageIndex}].question_groups[${groupIndex}].questions[${questionIndex}].question_type`}
-                                                                            defaultValue={question.question_type}
+                                                                            value={question.question_type}
+                                                                            onChange={(e) => handleQuestionChange(passageIndex, groupIndex, questionIndex, 'question_type', e.target.value)}
                                                                             label="Loại câu hỏi"
                                                                         >
                                                                             <MenuItem value="multiple-choice">Multiple Choice</MenuItem>
@@ -862,9 +911,10 @@ export default function ManageTest() {
                                                                         fullWidth
                                                                         label="Nội dung câu hỏi"
                                                                         name={`passages[${passageIndex}].question_groups[${groupIndex}].questions[${questionIndex}].question_text`}
-                                                                        defaultValue={question.question_text}
+                                                                        value={question.question_text}
                                                                         multiline
                                                                         rows={2}
+                                                                        onChange={(e) => handleQuestionChange(passageIndex, groupIndex, questionIndex, 'question_text', e.target.value)}
                                                                     />
 
                                                                     {(question.question_type === 'multiple-choice' || 
@@ -874,9 +924,10 @@ export default function ManageTest() {
                                                                             fullWidth
                                                                             label="Các lựa chọn (mỗi lựa chọn một dòng)"
                                                                             name={`passages[${passageIndex}].question_groups[${groupIndex}].questions[${questionIndex}].options`}
-                                                                            defaultValue={question.options?.join('\n') || ''}
+                                                                            value={question.options?.join('\n') || ''}
                                                                             multiline
                                                                             rows={4}
+                                                                            onChange={(e) => handleQuestionChange(passageIndex, groupIndex, questionIndex, 'options', e.target.value.split('\n'))}
                                                                         />
                                                                     )}
 
@@ -886,17 +937,7 @@ export default function ManageTest() {
                                                                             <Select
                                                                                 name={`passages[${passageIndex}].question_groups[${groupIndex}].questions[${questionIndex}].answer`}
                                                                                 value={question.answer[0] || ''}
-                                                                                onChange={(e) => {
-                                                                                    setSelectedTest(prev => {
-                                                                                        if (!prev) return null;
-                                                                                        const newPassages = [...prev.passages];
-                                                                                        newPassages[passageIndex].question_groups[groupIndex].questions[questionIndex].answer = [e.target.value];
-                                                                                        return {
-                                                                                            ...prev,
-                                                                                            passages: newPassages
-                                                                                        };
-                                                                                    });
-                                                                                }}
+                                                                                onChange={(e) => handleQuestionChange(passageIndex, groupIndex, questionIndex, 'answer', [e.target.value])}
                                                                                 label="Đáp án"
                                                                             >
                                                                                 {(question.options || []).map((option, index) => (
@@ -918,19 +959,7 @@ export default function ManageTest() {
                                                                                     label={`Đáp án cho "${option}"`}
                                                                                     name={`passages[${passageIndex}].question_groups[${groupIndex}].questions[${questionIndex}].answer[${index}]`}
                                                                                     value={question.answer[index] || ''}
-                                                                                    onChange={(e) => {
-                                                                                        setSelectedTest(prev => {
-                                                                                            if (!prev) return null;
-                                                                                            const newPassages = [...prev.passages];
-                                                                                            const newAnswer = [...(newPassages[passageIndex].question_groups[groupIndex].questions[questionIndex].answer || [])];
-                                                                                            newAnswer[index] = e.target.value;
-                                                                                            newPassages[passageIndex].question_groups[groupIndex].questions[questionIndex].answer = newAnswer;
-                                                                                            return {
-                                                                                                ...prev,
-                                                                                                passages: newPassages
-                                                                                            };
-                                                                                        });
-                                                                                    }}
+                                                                                    onChange={(e) => handleQuestionChange(passageIndex, groupIndex, questionIndex, 'answer', [...(question.answer || []), e.target.value])}
                                                                                     sx={{ mb: 1 }}
                                                                                 />
                                                                             ))}
@@ -943,17 +972,7 @@ export default function ManageTest() {
                                                                             label="Đáp án"
                                                                             name={`passages[${passageIndex}].question_groups[${groupIndex}].questions[${questionIndex}].answer`}
                                                                             value={question.answer[0] || ''}
-                                                                            onChange={(e) => {
-                                                                                setSelectedTest(prev => {
-                                                                                    if (!prev) return null;
-                                                                                    const newPassages = [...prev.passages];
-                                                                                    newPassages[passageIndex].question_groups[groupIndex].questions[questionIndex].answer = [e.target.value];
-                                                                                    return {
-                                                                                        ...prev,
-                                                                                        passages: newPassages
-                                                                                    };
-                                                                                });
-                                                                            }}
+                                                                            onChange={(e) => handleQuestionChange(passageIndex, groupIndex, questionIndex, 'answer', [e.target.value])}
                                                                             placeholder="Nhập true, false hoặc not given"
                                                                         />
                                                                     )}
@@ -965,17 +984,7 @@ export default function ManageTest() {
                                                                             <Select
                                                                                 name={`passages[${passageIndex}].question_groups[${groupIndex}].questions[${questionIndex}].answer`}
                                                                                 value={question.answer[0] || ''}
-                                                                                onChange={(e) => {
-                                                                                    setSelectedTest(prev => {
-                                                                                        if (!prev) return null;
-                                                                                        const newPassages = [...prev.passages];
-                                                                                        newPassages[passageIndex].question_groups[groupIndex].questions[questionIndex].answer = [e.target.value];
-                                                                                        return {
-                                                                                            ...prev,
-                                                                                            passages: newPassages
-                                                                                        };
-                                                                                    });
-                                                                                }}
+                                                                                onChange={(e) => handleQuestionChange(passageIndex, groupIndex, questionIndex, 'answer', [e.target.value])}
                                                                                 label="Đáp án"
                                                                             >
                                                                                 {(group.given_words || []).map((word, index) => (
@@ -995,22 +1004,7 @@ export default function ManageTest() {
                                                                                     <Checkbox
                                                                                         name={`passages[${passageIndex}].question_groups[${groupIndex}].questions[${questionIndex}].answer[${index}]`}
                                                                                         checked={question.answer.includes(option)}
-                                                                                        onChange={(e) => {
-                                                                                            setSelectedTest(prev => {
-                                                                                                if (!prev) return null;
-                                                                                                const newPassages = [...prev.passages];
-                                                                                                const currentAnswer = newPassages[passageIndex].question_groups[groupIndex].questions[questionIndex].answer || [];
-                                                                                                if (e.target.checked) {
-                                                                                                    newPassages[passageIndex].question_groups[groupIndex].questions[questionIndex].answer = [...currentAnswer, option];
-                                                                                                } else {
-                                                                                                    newPassages[passageIndex].question_groups[groupIndex].questions[questionIndex].answer = currentAnswer.filter(a => a !== option);
-                                                                                                }
-                                                                                                return {
-                                                                                                    ...prev,
-                                                                                                    passages: newPassages
-                                                                                                };
-                                                                                            });
-                                                                                        }}
+                                                                                        onChange={(e) => handleQuestionChange(passageIndex, groupIndex, questionIndex, 'answer', e.target.checked ? [...question.answer, option] : question.answer.filter((a) => a !== option))}
                                                                                     />
                                                                                     <Typography>{option}</Typography>
                                                                                 </Box>
@@ -1024,17 +1018,7 @@ export default function ManageTest() {
                                                                             label="Đáp án"
                                                                             name={`passages[${passageIndex}].question_groups[${groupIndex}].questions[${questionIndex}].answer`}
                                                                             value={question.answer[0] || ''}
-                                                                            onChange={(e) => {
-                                                                                setSelectedTest(prev => {
-                                                                                    if (!prev) return null;
-                                                                                    const newPassages = [...prev.passages];
-                                                                                    newPassages[passageIndex].question_groups[groupIndex].questions[questionIndex].answer = [e.target.value];
-                                                                                    return {
-                                                                                        ...prev,
-                                                                                        passages: newPassages
-                                                                                    };
-                                                                                });
-                                                                            }}
+                                                                            onChange={(e) => handleQuestionChange(passageIndex, groupIndex, questionIndex, 'answer', [e.target.value])}
                                                                         />
                                                                     )}
 
@@ -1042,9 +1026,10 @@ export default function ManageTest() {
                                                                         fullWidth
                                                                         label="Giải thích"
                                                                         name={`passages[${passageIndex}].question_groups[${groupIndex}].questions[${questionIndex}].explaination`}
-                                                                        defaultValue={question.explaination || ''}
+                                                                        value={question.explaination || ''}
                                                                         multiline
                                                                         rows={2}
+                                                                        onChange={(e) => handleQuestionChange(passageIndex, groupIndex, questionIndex, 'explaination', e.target.value)}
                                                                     />
                                                                 </Stack>
                                                             </Box>
@@ -1180,9 +1165,7 @@ export default function ManageTest() {
                                         <IconButton
                                             color="primary"
                                             onClick={() => {
-                                                setSelectedTest(test);
-                                                setIsEditing(true);
-                                                setOpenDialog(true);
+                                                handleOpenEdit(test);
                                             }}
                                             size="small"
                                         >
@@ -1191,9 +1174,7 @@ export default function ManageTest() {
                                         <IconButton
                                             color="warning"
                                             onClick={() => {
-                                                setSelectedTest(test);
-                                                setIsEditing(true);
-                                                setOpenDialog(true);
+                                                handleOpenEdit(test);
                                             }}
                                             size="small"
                                         >
@@ -1231,9 +1212,7 @@ export default function ManageTest() {
                     {isEditing ? "Chỉnh sửa test" : "Chi tiết test"}
                 </DialogTitle>
                 <DialogContent>
-                    {selectedTest && (
-                        isEditing ? renderTestForm(selectedTest) : renderTestForm(selectedTest)
-                    )}
+                    {selectedTest && renderTestForm(selectedTest)}
                 </DialogContent>
             </Dialog>
         </Box>

@@ -1,3 +1,4 @@
+import React from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
@@ -20,7 +21,7 @@ interface TiptapEditorProps {
     onChange: (content: string) => void;
 }
 
-const TiptapEditor = ({ content, onChange }: TiptapEditorProps) => {
+const TiptapEditor: React.FC<TiptapEditorProps> = ({ content, onChange }) => {
     const editor = useEditor({
         extensions: [
             StarterKit,

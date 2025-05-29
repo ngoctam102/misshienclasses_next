@@ -101,7 +101,7 @@ export default function HandleListeningTest({ test_slug }: { test_slug: string})
     }, [data]);
 
     useEffect(() => {
-        if (!countDown || remainingTime <= 0) return;
+        if (!countDown || remainingTime <= 0 || isSubmitted) return;
         const timer = setInterval(() => {
             setRemainingTime(prev => {
                 if (prev <= 1) {
@@ -112,15 +112,15 @@ export default function HandleListeningTest({ test_slug }: { test_slug: string})
             })
         }, 1000)
         return () => clearInterval(timer);
-    }, [countDown, remainingTime]);
+    }, [countDown, remainingTime, isSubmitted]);
 
     useEffect(() => {
-        if (remainingTime === 0) {
+        if (remainingTime === 0 && !isSubmitted) {
             if (formRef.current) {
                 formRef.current.requestSubmit();
             }
         }
-    }, [remainingTime, formRef]);
+    }, [remainingTime, formRef, isSubmitted]);
         
     if (isLoading) return <Spinner />
     if (error) return <div>Error: {error.message}</div>
@@ -169,32 +169,19 @@ export default function HandleListeningTest({ test_slug }: { test_slug: string})
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        if (Object.keys(studentAnswers).length < 40 && remainingTime > 0) {
-            toast.warning('Bạn cần điền đủ các câu trả lời trước khi bấm nút nộp bài ~!!😭😭!!~~');
-        } else if (Object.keys(studentAnswers).length < 40 && remainingTime === 0) {
+        setIsSubmitted(true);
+        setCountDown(false);
+        if (remainingTime === 0) {
             toast.warning('Thời gian làm bài đã hết. Bài làm sẽ được nộp tự động!~😎~😎~!');
-            const result = checkAnswers();
-            setResult(result);
-            setIsSubmitted(true);
-            const countAnswers = Object.values(result).filter(value => value === true).length;
-            setCountCorrectAnswer(countAnswers);
-            setBandScore(checkBandScore(countAnswers));
-            // Send result to handle score component
-            setShowScore(true);
         } else {
             toast.success("Nộp bài thành công!!~😍~😍~😍~!!");
-            const result = checkAnswers();
-            setResult(result);
-            setIsSubmitted(true);
-            // Đếm xem có bao nhiêu câu đúng
-            const countAnswers = Object.values(result).filter(value => value === true).length;
-            setCountCorrectAnswer(countAnswers);
-            // Tính điểm band score
-            setBandScore(checkBandScore(countAnswers));
-            // Send result to handle score component
-            setShowScore(true);
         }
-
+        const result = checkAnswers();
+        setResult(result);
+        const countAnswers = Object.values(result).filter(value => value === true).length;
+        setCountCorrectAnswer(countAnswers);
+        setBandScore(checkBandScore(countAnswers));
+        setShowScore(true);
     }
     return (
         <form className="w-full" onSubmit={handleSubmit} ref={formRef}>
@@ -271,7 +258,7 @@ export default function HandleListeningTest({ test_slug }: { test_slug: string})
                                     {selectedPassage.question_groups.map((group) => (
                                         <div key={group.group_title} className="leading-normal lg:leading-loose text-md lg:text-xl">
                                             <h3 className="font-bold text-left">{group.group_title}</h3>
-                                            <p>{group.group_instruction}</p>
+                                            <p className="text-justify font-semibold">{group.group_instruction}</p>
                                             {/* Thêm phần hiển thị content của group */}
                                             {group.content && (
                                                 <div className="mt-4 mb-4">
@@ -313,7 +300,10 @@ export default function HandleListeningTest({ test_slug }: { test_slug: string})
                                                     className={`${focusQuestion === question.question_number ? 'border-2 border-orange-500 p-3 rounded-lg' : ''} ${isSubmitted ? (isCorrect ? 'bg-green-100' : 'bg-red-100') : ''}`}
                                                     ref={el => {questionRef.current[question.question_number] = el}}>
                                                         <div className="flex items-center gap-3">
-                                                            {question.question_number}. {question.question_text}
+                                                            <span className="question-number bg-orange-500 text-white font-bold px-3 py-1 rounded-full text-sm hover:scale-110 transition-transform duration-300 cursor-pointer">
+                                                                {question.question_number}
+                                                            </span>
+                                                            <span>{question.question_text}</span>
                                                             {isSubmitted && (
                                                                 <>
                                                                     <span className={`${isCorrect ? '' : 'text-red-500'}`}>{isCorrect ? '✅' : '✘'}</span>
