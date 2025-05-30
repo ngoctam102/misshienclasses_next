@@ -216,13 +216,13 @@ export default function HandleListeningTest({ test_slug }: { test_slug: string})
                     </button>
                 ))}
             </div>
-            <div className="passage-container w-full h-[65vh] mb-10">
+            <div className="passage-container w-full h-[90vh] mb-10">
                 {selectedPassage && (
                     <div className="w-[95vw] mx-auto bg-white flex flex-col lg:flex-row h-full p-2 lg:p-5 shadow-lg rounded-2xl overflow-auto">
                         <div className="flex flex-col lg:flex-row w-full lg:w-10/12 rounded-lg">
                             <div className="w-full lg:w-[60%] px-2 lg:px-4 overflow-y-auto">
                                 <h2 className="font-bold text-2xl mt-4">{selectedPassage.title}</h2>
-                                <div className="mt-2 text-justify leading-loose text-md lg:text-xl">
+                                <div className="mt-2 text-justify leading-loose text-[16px]">
                                     {selectedPassage.audio_url && (
                                         <div key={`audio-${selectedPassage.passage_number}`}>
                                             <audio controls className="w-full mb-4">
@@ -256,7 +256,7 @@ export default function HandleListeningTest({ test_slug }: { test_slug: string})
                             <div className="w-full lg:w-[40%] mt-5 px-2 lg:px-5 overflow-y-auto h-full">
                                 <div>
                                     {selectedPassage.question_groups.map((group) => (
-                                        <div key={group.group_title} className="leading-normal lg:leading-loose text-md lg:text-xl">
+                                        <div key={group.group_title} className="leading-loose text-[16px]">
                                             <h3 className="font-bold text-left">{group.group_title}</h3>
                                             <p className="text-justify font-semibold">{group.group_instruction}</p>
                                             {/* Thêm phần hiển thị content của group */}
@@ -297,7 +297,7 @@ export default function HandleListeningTest({ test_slug }: { test_slug: string})
                                                     const isCorrect = result?.[question.question_number];
                                                     return (
                                                     <div key={question.question_number} 
-                                                    className={`${focusQuestion === question.question_number ? 'border-2 border-orange-500 p-3 rounded-lg' : ''} ${isSubmitted ? (isCorrect ? 'bg-green-100' : 'bg-red-100') : ''}`}
+                                                    className={`${focusQuestion === question.question_number ? 'border-2 border-orange-500 p-3 rounded-lg' : ''} ${isSubmitted ? (isCorrect ? 'bg-green-100' : 'bg-red-100') : ''} mb-3`}
                                                     ref={el => {questionRef.current[question.question_number] = el}}>
                                                         <div className="flex items-center gap-3">
                                                             <span className="question-number bg-orange-500 text-white font-bold px-3 py-1 rounded-full text-sm hover:scale-110 transition-transform duration-300 cursor-pointer">
@@ -445,7 +445,7 @@ export default function HandleListeningTest({ test_slug }: { test_slug: string})
                                 </div>
                             </div>
                         </div>
-                        <div className="w-full lg:w-2/12 pl-2 lg:pl-6 rounded-lg text-sm lg:text-xl overflow-y-auto">
+                        <div className="w-full lg:w-2/12 pl-2 lg:pl-6 rounded-lg text-[16px] overflow-y-auto">
                             <div className="w-full flex flex-col">
                                 <div className="font-semibold">Thời gian: {duration} phút</div>
                                 <div className="font-semibold mt-5">

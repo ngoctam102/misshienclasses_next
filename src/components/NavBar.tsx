@@ -170,7 +170,7 @@ export default function Navbar() {
                         {!isLoggedIn ? (
                             <Link 
                                 href="/signup" 
-                                className="ml-2 lg:ml-4 px-2 lg:px-4 py-1 lg:py-2 hover:cursor-pointer rounded-md text-xs lg:text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 hover:scale-110 transition duration-300 ease-in-out"
+                                className="ml-2 lg:ml-4 px-2 lg:px-4 py-1 lg:py-2 cursor-pointer rounded-md text-xs lg:text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 hover:scale-110 transition duration-300 ease-in-out"
                             >
                                 Đăng ký
                             </Link>
@@ -179,7 +179,7 @@ export default function Navbar() {
                                 <span className="text-xs lg:text-sm text-gray-600 font-medium">Xin chào, {name}</span>
                                 <button 
                                     onClick={handleLogout}
-                                    className="px-2 lg:px-4 py-1 lg:py-2 hover:cursor-pointer rounded-md text-xs lg:text-sm font-medium text-white bg-red-500 hover:bg-red-600 hover:scale-110 transition duration-300 ease-in-out"
+                                    className="px-2 lg:px-4 py-1 lg:py-2 cursor-pointer rounded-md text-xs lg:text-sm font-medium text-white bg-red-500 hover:bg-red-600 hover:scale-110 transition duration-300 ease-in-out"
                                 >
                                     Đăng xuất
                                 </button>
